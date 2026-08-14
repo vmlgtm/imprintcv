@@ -1,0 +1,56 @@
+{
+  "metadata": {
+    "schemaVersion": "2.1.0",
+    "vaultVersion": 1,
+    "vaultHash": "hash_fresh_grad",
+    "lastUpdated": "2026-08-14T00:00:00Z"
+  },
+  "basics": {
+    "name": "Maya Lin",
+    "email": "maya.lin@stanford.alumni.edu",
+    "phone": "+1-555-0133",
+    "location": "Palo Alto, CA",
+    "summary": "Recent Stanford Computer Science graduate with internship experience in backend Go and distributed databases."
+  },
+  "experience": [
+    {
+      "id": "exp_meta",
+      "company": "Meta",
+      "title": "Software Engineering Intern",
+      "location": "Menlo Park, CA",
+      "startDate": "2025-06",
+      "endDate": "2025-09",
+      "highlights": [
+        {
+          "id": "bullet_meta_01",
+          "text": "Built internal telemetry dashboard using React and Python used by 50 infrastructure engineers.",
+          "technologies": ["Python", "React", "SQL"]
+        }
+      ],
+      "technologies": ["Python", "React", "SQL"]
+    }
+  ],
+  "skills": [
+    { "id": "skill_python", "name": "Python", "canonical": "python" },
+    { "id": "skill_react", "name": "React", "canonical": "react" },
+    { "id": "skill_sql", "name": "SQL", "canonical": "sql" }
+  ],
+  "education": [
+    {
+      "id": "edu_stanford",
+      "institution": "Stanford University",
+      "degree": "B.S. in Computer Science",
+      "startDate": "2022-09",
+      "endDate": "2026-06"
+    }
+  ],
+  "projects": [
+    {
+      "id": "proj_p2p",
+      "name": "PeerStore",
+      "description": "Peer-to-peer file sharing protocol in Go with DHT routing",
+      "technologies": ["Go", "gRPC"],
+      "highlights": ["Benchmarked with 50 concurrent simulated nodes with <50ms lookup time."]
+    }
+  ]
+}

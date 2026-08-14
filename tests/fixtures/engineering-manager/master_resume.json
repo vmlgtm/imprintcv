@@ -1,0 +1,53 @@
+{
+  "metadata": {
+    "schemaVersion": "2.1.0",
+    "vaultVersion": 1,
+    "vaultHash": "hash_em",
+    "lastUpdated": "2026-08-14T00:00:00Z"
+  },
+  "basics": {
+    "name": "David Sterling",
+    "email": "david.sterling@leadership.tech",
+    "phone": "+1-555-0177",
+    "location": "Seattle, WA",
+    "summary": "Engineering Director with 12+ years building and managing high-performing cloud infrastructure teams."
+  },
+  "experience": [
+    {
+      "id": "exp_amazon",
+      "company": "Amazon Web Services",
+      "title": "Engineering Manager",
+      "location": "Seattle, WA",
+      "startDate": "2019-06",
+      "endDate": null,
+      "highlights": [
+        {
+          "id": "bullet_aws_01",
+          "text": "Led 14-person distributed systems engineering team delivering AWS Serverless telemetry services.",
+          "technologies": ["AWS", "Java", "Kubernetes"]
+        },
+        {
+          "id": "bullet_aws_02",
+          "text": "Reduced annual developer turnover from 18% to 4% while promoting 5 senior engineers to Staff tier.",
+          "technologies": ["Mentorship", "Agile"]
+        }
+      ],
+      "technologies": ["AWS", "Java", "Kubernetes", "Agile", "Mentorship"]
+    }
+  ],
+  "skills": [
+    { "id": "skill_mgmt", "name": "Engineering Management", "canonical": "engineering management" },
+    { "id": "skill_aws", "name": "AWS", "canonical": "amazon web services" },
+    { "id": "skill_k8s", "name": "Kubernetes", "canonical": "kubernetes" }
+  ],
+  "education": [
+    {
+      "id": "edu_uw",
+      "institution": "University of Washington",
+      "degree": "B.S. in Computer Engineering",
+      "startDate": "2010-09",
+      "endDate": "2014-06"
+    }
+  ],
+  "projects": []
+}

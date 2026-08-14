@@ -1,0 +1,62 @@
+{
+  "metadata": {
+    "schemaVersion": "2.1.0",
+    "vaultVersion": 1,
+    "vaultHash": "hash_career_switch",
+    "lastUpdated": "2026-08-14T00:00:00Z"
+  },
+  "basics": {
+    "name": "Jordan Taylor",
+    "email": "jordan.taylor@switch.dev",
+    "phone": "+1-555-0122",
+    "location": "Austin, TX",
+    "summary": "Former Quantitative Financial Analyst transitioned to Full-Stack Software Engineer with strong Python and TypeScript skills."
+  },
+  "experience": [
+    {
+      "id": "exp_goldman",
+      "company": "Goldman Sachs",
+      "title": "Quantitative Financial Analyst",
+      "location": "New York, NY",
+      "startDate": "2019-07",
+      "endDate": "2023-12",
+      "highlights": [
+        {
+          "id": "bullet_gs_01",
+          "text": "Automated algorithmic risk modeling pipeline in Python, reducing daily report processing time from 4 hours to 20 minutes (91% reduction).",
+          "technologies": ["Python", "Pandas", "SQL"]
+        },
+        {
+          "id": "bullet_gs_02",
+          "text": "Built internal financial calculation spreadsheets and automated SQL ETL scripts handling $200M in daily portfolio reconciliations.",
+          "technologies": ["Python", "SQL"]
+        }
+      ],
+      "technologies": ["Python", "Pandas", "SQL"]
+    }
+  ],
+  "skills": [
+    { "id": "skill_py", "name": "Python", "canonical": "python" },
+    { "id": "skill_sql", "name": "SQL", "canonical": "sql" },
+    { "id": "skill_ts", "name": "TypeScript", "canonical": "typescript" },
+    { "id": "skill_react", "name": "React", "canonical": "react" }
+  ],
+  "education": [
+    {
+      "id": "edu_nyu",
+      "institution": "New York University",
+      "degree": "B.S. in Mathematics and Economics",
+      "startDate": "2015-09",
+      "endDate": "2019-05"
+    }
+  ],
+  "projects": [
+    {
+      "id": "proj_trade",
+      "name": "TradeTrack",
+      "description": "Full-stack portfolio analytics web application built with React, Node.js, and PostgreSQL",
+      "technologies": ["React", "TypeScript", "PostgreSQL", "Node.js"],
+      "highlights": ["Features interactive charting and real-time stock price streaming via WebSockets."]
+    }
+  ]
+}

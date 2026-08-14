@@ -1,0 +1,12 @@
+Staff UI & Web Performance Engineer at Linear
+Location: Remote / New York, NY
+
+About the Role:
+We are looking for a Staff Frontend Engineer with deep mastery of React, TypeScript, and high-performance WebGL/canvas rendering.
+You will lead our next-generation web client rendering engine, build component systems for fast keyboard navigation, and optimize client latency.
+
+Requirements:
+- 8+ years building high-scale web client applications
+- Deep expertise in React, TypeScript, and modern browser performance profiling
+- Experience building WebGL or canvas-based rendering pipelines
+- Proven track record creating reusable design system component libraries

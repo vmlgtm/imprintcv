@@ -1,0 +1,11 @@
+Senior Backend Infrastructure Engineer at Stripe
+Location: San Francisco, CA
+
+Job Description:
+We are seeking a Senior Backend Infrastructure Engineer to scale our core event streaming and transaction ingest platform.
+You will write high-throughput Go microservices, design partition keys for Kafka topics, and maintain database shard consistency.
+
+Requirements:
+- Strong background with Go and distributed systems
+- Production experience running Kafka pipelines at high event throughput
+- Hands-on knowledge of Kubernetes and multi-region replication

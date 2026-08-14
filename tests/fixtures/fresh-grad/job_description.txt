@@ -1,0 +1,11 @@
+Junior Backend Software Engineer at Stripe
+Location: San Francisco, CA / Seattle, WA
+
+Role:
+We are looking for university graduates or entry-level software engineers to join our Core Platform team.
+You will write backend services, improve database querying efficiency, and build developer productivity tools.
+
+Requirements:
+- Degree in Computer Science or related engineering discipline
+- Strong programming fundamentals in Python, Go, or Java
+- Solid grasp of data structures, algorithms, and SQL databases

@@ -1,0 +1,11 @@
+Director of Cloud Engineering at Cloudflare
+Location: Seattle, WA / Remote
+
+Overview:
+We are looking for an experienced Engineering Manager / Director to lead our Cloud Platform Engineering teams.
+You will manage engineering managers and staff engineers, define quarterly roadmaps, and foster an inclusive culture of technical excellence.
+
+Requirements:
+- 5+ years of direct people management experience in cloud infrastructure
+- Experience leading teams building high-availability distributed systems on AWS or GCP
+- Proven track record of hiring, mentoring, and retaining top engineering talent

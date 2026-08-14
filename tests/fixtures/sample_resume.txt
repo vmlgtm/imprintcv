@@ -1,0 +1,21 @@
+John Doe
+john.doe@example.com | (555) 123-4567 | San Francisco, CA
+https://johndoe.dev | github.com/johndoe
+
+Summary:
+Senior Software Engineer with 8 years of experience building resilient microservices in Go and TypeScript.
+
+Experience:
+Senior Software Engineer - Stripe (2021-03 to Present)
+- Architected payment routing engine processing 20,000 tx/sec with 99.999% availability.
+- Reduced transaction processing latency by 40% through redis caching.
+
+Software Engineer - Airbnb (2018-06 to 2021-02)
+- Built internal deployment tool used by 400+ engineers daily.
+- Migrated legacy monolith to Kubernetes and Terraform.
+
+Skills:
+Go, TypeScript, Python, Kubernetes, AWS, Redis, PostgreSQL, Kafka, Terraform
+
+Education:
+B.S. in Computer Science - UC Berkeley (2014 - 2018)

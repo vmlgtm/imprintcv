@@ -1,0 +1,11 @@
+Full-Stack Software Engineer (Fintech) at Plaid
+Location: Austin, TX / Remote
+
+About Plaid:
+We build the data network powering digital finance.
+We are looking for a Full-Stack Engineer with strong Python and TypeScript fundamentals and an analytical mindset to build financial data integration APIs.
+
+Requirements:
+- Strong programming background in Python, TypeScript, and SQL
+- Experience with React frontend and Node.js backend development
+- High attention to detail with financial/numerical accuracy

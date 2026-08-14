@@ -1,0 +1,54 @@
+{
+  "metadata": {
+    "schemaVersion": "2.1.0",
+    "vaultVersion": 1,
+    "vaultHash": "hash_backend",
+    "lastUpdated": "2026-08-14T00:00:00Z"
+  },
+  "basics": {
+    "name": "Marcus Vance",
+    "email": "marcus@vance.io",
+    "phone": "+1-555-0188",
+    "location": "San Francisco, CA",
+    "summary": "Senior Distributed Backend Engineer specializing in Go, Kafka, and low-latency databases."
+  },
+  "experience": [
+    {
+      "id": "exp_databricks",
+      "company": "Databricks",
+      "title": "Senior Distributed Systems Engineer",
+      "location": "San Francisco, CA",
+      "startDate": "2020-03",
+      "endDate": null,
+      "highlights": [
+        {
+          "id": "bullet_db_01",
+          "text": "Engineered distributed streaming ingest pipeline handling 1,500,000 events/sec with P99 write latency under 15ms.",
+          "technologies": ["Go", "Kafka", "gRPC", "Kubernetes"]
+        },
+        {
+          "id": "bullet_db_02",
+          "text": "Automated cross-region replication for 120 database shards, cutting failover recovery time by 65%.",
+          "technologies": ["Go", "Raft", "PostgreSQL"]
+        }
+      ],
+      "technologies": ["Go", "Kafka", "gRPC", "Kubernetes", "PostgreSQL", "Raft"]
+    }
+  ],
+  "skills": [
+    { "id": "skill_go", "name": "Go", "canonical": "go" },
+    { "id": "skill_kafka", "name": "Kafka", "canonical": "apache kafka" },
+    { "id": "skill_k8s", "name": "Kubernetes", "canonical": "kubernetes" },
+    { "id": "skill_postgres", "name": "PostgreSQL", "canonical": "postgresql" }
+  ],
+  "education": [
+    {
+      "id": "edu_cmu",
+      "institution": "Carnegie Mellon University",
+      "degree": "M.S. in Computer Science",
+      "startDate": "2018-08",
+      "endDate": "2020-02"
+    }
+  ],
+  "projects": []
+}

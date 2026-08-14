@@ -1,0 +1,73 @@
+{
+  "metadata": {
+    "schemaVersion": "2.1.0",
+    "vaultVersion": 1,
+    "vaultHash": "hash_senior_frontend",
+    "lastUpdated": "2026-08-14T00:00:00Z"
+  },
+  "basics": {
+    "name": "Elena Rostova",
+    "email": "elena.rostova@frontend.dev",
+    "phone": "+1-555-0144",
+    "location": "New York, NY",
+    "website": "https://elenarostova.dev",
+    "github": "https://github.com/erostova",
+    "summary": "Staff Frontend Engineer with 9 years specializing in React, Web Performance, and Design Systems."
+  },
+  "experience": [
+    {
+      "id": "exp_figma",
+      "company": "Figma",
+      "title": "Staff Frontend Engineer",
+      "location": "New York, NY",
+      "startDate": "2021-04",
+      "endDate": null,
+      "highlights": [
+        {
+          "id": "bullet_figma_01",
+          "text": "Architected WebGL-accelerated canvas renderer reducing interaction latency from 45ms to 8ms (82% speedup).",
+          "technologies": ["TypeScript", "WebGL", "React", "Rust"]
+        },
+        {
+          "id": "bullet_figma_02",
+          "text": "Created enterprise design system component library adopted by 250+ engineers across 18 product squads.",
+          "technologies": ["React", "TypeScript", "TailwindCSS"]
+        }
+      ],
+      "technologies": ["TypeScript", "WebGL", "React", "Rust", "TailwindCSS"]
+    },
+    {
+      "id": "exp_spotify",
+      "company": "Spotify",
+      "title": "Senior Web Engineer",
+      "location": "New York, NY",
+      "startDate": "2018-02",
+      "endDate": "2021-03",
+      "highlights": [
+        {
+          "id": "bullet_spotify_01",
+          "text": "Re-engineered web player core web vitals, improving Largest Contentful Paint (LCP) by 1.8 seconds for 40M active monthly web users.",
+          "technologies": ["React", "TypeScript", "Redux", "GraphQL"]
+        }
+      ],
+      "technologies": ["React", "TypeScript", "Redux", "GraphQL"]
+    }
+  ],
+  "skills": [
+    { "id": "skill_react", "name": "React", "canonical": "react" },
+    { "id": "skill_ts", "name": "TypeScript", "canonical": "typescript" },
+    { "id": "skill_webgl", "name": "WebGL", "canonical": "webgl" },
+    { "id": "skill_rust", "name": "Rust", "canonical": "rust" },
+    { "id": "skill_graphql", "name": "GraphQL", "canonical": "graphql" }
+  ],
+  "education": [
+    {
+      "id": "edu_columbia",
+      "institution": "Columbia University",
+      "degree": "B.S. in Computer Science",
+      "startDate": "2014-09",
+      "endDate": "2018-05"
+    }
+  ],
+  "projects": []
+}
