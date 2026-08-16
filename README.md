@@ -4,32 +4,78 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![npm version](https://img.shields.io/npm/v/imprintcv.svg)](https://www.npmjs.com/package/imprintcv)
 
-> **AI can rewrite your resume. ImprintCV ensures it doesn't invent your career.**
+> **Tailor resumes with LLMs without hallucinated metrics, altered dates, or broken formatting.**
 
 When you ask ChatGPT or Claude to tailor your resume for a job, it often inflates numbers, exaggerates job titles, invents skills you don't have, or messes up LaTeX formatting.
 
-**ImprintCV** is a local-first CLI and MCP server that:
+**ImprintCV** is a local-first engine and tool that:
 1. Stores your actual career history in an immutable local **Career Vault** (`~/career/`).
 2. Uses LLMs *only* to rephrase and select relevant experience for a target job description.
 3. **Deterministically verifies** all metrics, dates, companies, and claims before outputting anything (zero hallucinations).
-4. Compiles a pixel-perfect, ATS-compliant PDF in **~30ms** via in-memory Typst WebAssembly (no LaTeX or Python required).
+4. Compiles a clean, ATS-parseable PDF in **~30ms** via in-memory Typst WebAssembly (no LaTeX or Python required).
 
 ---
 
-## Quick Start
+## Choose Your Workflow
 
-### 1. Installation
+You can use ImprintCV either **interactively through your AI editor/agent** or **directly from your terminal**.
 
-```bash
-npm install -g imprintcv
+### 🅰️ Option 1: Use with AI Agents (Cursor, Claude Code, Windsurf, Antigravity)
+
+Connect ImprintCV as an MCP (Model Context Protocol) server so your AI agent can manage your resume with deterministic guardrails.
+
+Add to your MCP configuration (`claude_desktop_config.json`, Cursor Settings, `antigravity.json`, etc.):
+
+```json
+{
+  "mcpServers": {
+    "imprintcv": {
+      "command": "npx",
+      "args": ["-y", "imprintcv-mcp"]
+    }
+  }
+}
 ```
 
-### 2. Configure Your LLM Provider
+#### How the Agentic Workflow Works
+When you ask your agent to tailor a resume, it executes an autonomous **verify-and-repair loop**:
 
-Set an API key for your preferred provider, or run 100% locally and offline with Ollama:
+```
+┌──────────────┐     1. imprintcv_get_facts      ┌──────────────────┐
+│              │ ──────────────────────────────▶ │  Career Vault    │
+│              │ ◀────────────────────────────── │  (Immutable)     │
+│   AI Agent   │
+│ (Claude Code │     2. imprintcv_verify_draft   ┌──────────────────┐
+│   Cursor,    │ ──────────────────────────────▶ │ ImprintCV Engine │
+│ Antigravity) │ ◀────────────────────────────── │ (Pass / Repairs) │
+│              │       [Loop until verified]     └──────────────────┘
+│              │
+│              │     3. imprintcv_compile_pdf    ┌──────────────────┐
+│              │ ──────────────────────────────▶ │ ATS PDF (~30ms)  │
+└──────────────┘                                 └──────────────────┘
+```
+
+1. **Fetches Canonical Facts**: The agent reads your verified career facts via `imprintcv_get_facts`.
+2. **Drafts Tailored Content**: The agent reorders and highlights relevant experience while preserving stable source bullet IDs.
+3. **Deterministic Verification**: The agent calls `imprintcv_verify_draft`. If any metric inflation or title changes are detected, ImprintCV returns structured repair instructions so the agent can fix them.
+4. **Instant PDF Compilation**: Once verified, the agent compiles the PDF via `imprintcv_compile_pdf`.
+
+**Example Agent Prompt:**
+> *"Tailor my resume for this Staff Engineer opening: https://stripe.com/jobs/12345. Fetch my facts from ImprintCV, verify the draft to ensure zero hallucinations, and compile a single-page PDF."*
+
+*(Also ships with a drop-in skill at `skills/imprintcv/SKILL.md` compatible with Pi, Claude Code, and Antigravity).*
+
+---
+
+### 🅱️ Option 2: Use via Terminal CLI
+
+Run ImprintCV directly from your command line using `npx` (no install needed) or install globally.
+
+#### 1. Setup Your LLM Provider
+Set an API key for your preferred provider, or run 100% offline with Ollama:
 
 ```bash
-# Google Gemini (Recommended — free tier works out of the box)
+# Google Gemini (Free tier works out of the box)
 export GEMINI_API_KEY="your-api-key"
 
 # Or OpenAI / Anthropic / OpenRouter
@@ -42,26 +88,25 @@ export IMPRINTCV_PROVIDER="ollama"
 export OLLAMA_MODEL="llama3.2"
 ```
 
-### 3. Bootstrap Your Career Vault
-
-Import your existing resume (`.pdf`, `.docx`, or `.txt`) to create your canonical profile:
+#### 2. Bootstrap Your Career Vault
+Import an existing resume (`.pdf`, `.docx`, or `.txt`) to create your canonical profile:
 
 ```bash
-imprintcv init --from ./my_resume.pdf
+npx imprintcv init --from ./my_resume.pdf
 ```
 *This creates `~/career/master_resume.json` with stable bullet IDs and verified metrics.*
 
-### 4. Tailor for a Job Description
+#### 3. Tailor for a Target Job
 
 ```bash
-# From a URL
-imprintcv tailor --jd "https://stripe.com/jobs/12345"
+# From a job posting URL
+npx imprintcv tailor --jd "https://stripe.com/jobs/12345"
 
-# From a local text file
-imprintcv tailor --jd ./job_description.txt
+# From a local text file with a 1-page budget constraint
+npx imprintcv tailor --jd ./job_description.txt --template modern --pages 1
 
-# Target a strict 1-page budget with a specific template
-imprintcv tailor --jd ./job.txt --template modern --pages 1
+# Headless mode for CI/CD or scripts (pure JSON to stdout, logs to stderr)
+npx imprintcv tailor --jd ./job.txt --json > result.json
 ```
 
 ---
@@ -87,81 +132,14 @@ Target Job Description ──┐
 
 ---
 
-## 🤖 Agentic Workflows & Tool Use
+## ATS Compatibility & Text Parsing
 
-ImprintCV is designed from the ground up to integrate seamlessly into **AI agent workflows** (Claude Code, Cursor, Windsurf, Antigravity, Pi, or custom autonomous scripts).
+Rather than making vague marketing claims, ImprintCV enforces ATS compatibility through concrete architectural guarantees:
 
-### Why Agents Need ImprintCV
-When autonomous agents tailor resumes, prompt drift and hallucinations are major risks. ImprintCV gives agents a **deterministic verify-and-repair loop**: an agent can draft a tailored resume, submit it to ImprintCV for static verification, receive actionable error reports, fix the claims, and compile the final PDF.
-
-```
-┌──────────────┐     1. imprintcv_get_facts      ┌──────────────────┐
-│              │ ──────────────────────────────▶ │  Career Vault    │
-│              │ ◀────────────────────────────── │  (Immutable)     │
-│   AI Agent   │
-│ (Claude Code │     2. imprintcv_verify_draft   ┌──────────────────┐
-│   Cursor,    │ ──────────────────────────────▶ │ ImprintCV Engine │
-│ Antigravity) │ ◀────────────────────────────── │ (Pass / Repairs) │
-│              │       [Loop until verified]     └──────────────────┘
-│              │
-│              │     3. imprintcv_compile_pdf    ┌──────────────────┐
-│              │ ──────────────────────────────▶ │ ATS PDF (~30ms)  │
-└──────────────┘                                 └──────────────────┘
-```
-
----
-
-### Integration Option A: Model Context Protocol (MCP)
-
-Add ImprintCV to your MCP configuration (`claude_desktop_config.json`, Cursor Settings, `antigravity.json`, etc.):
-
-```json
-{
-  "mcpServers": {
-    "imprintcv": {
-      "command": "npx",
-      "args": ["-y", "imprintcv-mcp"]
-    }
-  }
-}
-```
-
-#### Exposed MCP Tools for Agents
-
-| MCP Tool | Description |
-| :--- | :--- |
-| `imprintcv_init` | Bootstrap Career Vault from a source resume file (`.pdf`, `.docx`, `.txt`). |
-| `imprintcv_get_facts` | Fetch canonical career facts, metrics, and stable bullet IDs from the vault. |
-| `imprintcv_verify_draft` | Deterministically verify a draft JSON. Returns `PASS`, `PASS_WITH_WARNINGS`, or `FAIL` with structured `repairAction` items. |
-| `imprintcv_compile_pdf` | Compile a verified draft into an ATS-optimized PDF using in-memory Typst WASM. |
-
-#### Example Agent Prompt
-Once configured, you can prompt your AI agent directly:
-> *"Tailor my resume for this Staff Engineer opening: https://stripe.com/jobs/12345. Fetch my facts from ImprintCV, verify the draft to ensure zero hallucinations, and compile a single-page PDF."*
-
----
-
-### Integration Option B: Agent Skills (`SKILL.md`)
-
-ImprintCV ships with an agent skill definition at `skills/imprintcv/SKILL.md` compatible with agent frameworks like **Pi** (`pi.dev`), **Claude Code**, and **Antigravity**.
-
-To use the skill, point your agent to the `skills/imprintcv/` directory or include `SKILL.md` in your agent prompt context.
-
----
-
-### Integration Option C: Headless Scripting & Autonomous Pipelines
-
-For CI/CD pipelines, subagents, or batch processing scripts, use the headless `--json` mode:
-
-```bash
-# Run tailoring in headless mode (pure JSON to stdout, diagnostic logs to stderr)
-imprintcv tailor --jd ./job.txt --json > result.json
-
-# Exit codes:
-# 0 = Verification PASSED & PDF compiled
-# 1 = Verification FAILED (hallucination or constraint violation detected)
-# 2 = Execution or network error
-```
+1. **Single-Column Linear Hierarchy**: All templates use clean, single-column reading orders without floating text boxes, sidebars, or unparseable multi-column grids that confuse ATS parsers.
+2. **Standard Selectable Text Streams**: PDFs are compiled via Typst with clean Unicode text layers (no rasterized text or non-standard font encodings).
+3. **Automated Parser Invariant Tests**: Every build runs integration tests with `pdf-parse` to verify that applicant contact info, job titles, companies, dates, and skills extract in exact logical sequence.
+4. **RenderCV-Compatible YAML Export**: Every run generates a `resume.yaml` file conforming to standard resume interchange formats.
 
 ---
 
