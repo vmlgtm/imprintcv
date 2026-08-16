@@ -117,4 +117,4 @@ npm test
 
 ## License
 
-MIT © [ImprintCV Contributors](LICENSE)
+MIT © [ImprintCV Contributors](https://github.com/vmlgtm/imprintcv/blob/main/LICENSE)
