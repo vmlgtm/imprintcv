@@ -149,7 +149,7 @@ CRITICAL CONSTRAINTS:
 2. NO CLAIM ESCALATION: Do NOT upgrade past role titles to "Principal Architect" or "VP". Do NOT upgrade "resilience during outages" to "zero downtime". Do NOT claim "microservices" unless the source explicitly specifies microservices.
 3. NO UNGROUNDED TECH: Do NOT claim technologies (e.g. "Azure", "C#", ".NET") in candidate bullets unless present in the candidate's career data.
 4. EXACT METRIC PRESERVATION: Preserve exact numbers, percentages, and currencies (e.g., "~300 retail stores", "400+ collection centres", "~₹62 lakh annually", "~3 days vs ~14 days", "9 frontend engineers").
-5. Write a compelling 3-paragraph cover letter referencing only facts present in the candidate's career data.
+5. Write a compelling 3-paragraph cover letter starting with "Dear Hiring Team at ${plan.targetCompany}," (or "Dear Hiring Manager at ${plan.targetCompany},") referencing only facts present in the candidate's career data.
 
 JOB DESCRIPTION:
 ${jdText}

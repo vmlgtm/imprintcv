@@ -11,10 +11,4 @@ export default defineConfig({
   clean: true,
   dts: true,
   sourcemap: true,
-  banner: ({ entry }) => {
-    if (entry === 'cli' || entry === 'mcp/index') {
-      return { js: '#!/usr/bin/env node' };
-    }
-    return {};
-  },
 });

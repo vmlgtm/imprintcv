@@ -29,7 +29,7 @@
 2. **Local-First & In-Memory Typst WASM**: Compiles ATS-optimized PDFs in ~30ms without native LaTeX/Python dependencies.
 3. **Agent-Native MCP Server**: Drop-in Model Context Protocol (MCP) server for Claude Code, Cursor, and Antigravity, plus `SKILL.md` for Pi (`pi.dev`).
 4. **5-Second Bootstrap (`imprintcv init`)**: Ingest legacy PDFs, DOCX, or TXT into a structured, version-controlled Career Vault (`~/career/`).
-5. **Multi-Provider LLM Support**: Works seamlessly with Google Gemini (free tier), OpenAI, Anthropic, and OpenRouter via Vercel AI SDK.
+5. **Multi-Provider LLM Support**: Works seamlessly with Google Gemini (free tier), OpenAI, Anthropic, OpenRouter, and local Ollama (`llama3.2`, `mistral`, etc.) via Vercel AI SDK.
 
 ---
 

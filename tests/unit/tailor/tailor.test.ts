@@ -66,7 +66,7 @@ describe('Phase 4: Tailoring Pipeline', () => {
     const result = await tailorWithRepair(master, facts, plan, jdText);
 
     expect(result.tailoredResume).toBeDefined();
-    expect(result.coverLetter).toContain('Dear Hiring Manager');
+    expect(result.coverLetter).toMatch(/Dear (Hiring|Team)/i);
     expect(result.verificationReport.status).toBe('PASS');
     expect(result.tailoredResume.experience[0].bullets[0].sourceBulletIds).toBeDefined();
     expect(result.tailoredResume.experience[0].bullets[0].sourceBulletIds).toHaveLength(1);

@@ -66,12 +66,19 @@ export async function runDiagnostics(customVaultPath?: string): Promise<Diagnost
     message: vaultMsg,
   });
 
-  // 4. LLM Provider API Keys
+  // 4. LLM Provider API Keys & Local Endpoints
   const providersFound: string[] = [];
   if (process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY) providersFound.push('Gemini');
   if (process.env.OPENAI_API_KEY) providersFound.push('OpenAI');
   if (process.env.ANTHROPIC_API_KEY) providersFound.push('Anthropic');
   if (process.env.OPENROUTER_API_KEY) providersFound.push('OpenRouter');
+  if (
+    process.env.IMPRINTCV_PROVIDER?.toLowerCase() === 'ollama' ||
+    process.env.OLLAMA_BASE_URL ||
+    process.env.OLLAMA_MODEL
+  ) {
+    providersFound.push(`Ollama (${process.env.OLLAMA_BASE_URL || 'http://localhost:11434/v1'})`);
+  }
 
   checks.push({
     name: 'LLM API Providers',
@@ -79,7 +86,7 @@ export async function runDiagnostics(customVaultPath?: string): Promise<Diagnost
     message:
       providersFound.length > 0
         ? `Configured providers: ${providersFound.join(', ')}`
-        : 'No API keys set (fallback mode active; set GOOGLE_GENERATIVE_AI_API_KEY for free tier)',
+        : 'No API keys set (fallback mode active; set GOOGLE_GENERATIVE_AI_API_KEY for free tier or run Ollama)',
   });
 
   const hasErrors = checks.filter((c) => !c.passed && c.name !== 'LLM API Providers' && c.name !== 'Career Vault').length > 0;

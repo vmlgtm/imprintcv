@@ -26,7 +26,7 @@ program
 
 // Global options
 program
-  .option('--provider <provider>', 'LLM provider (gemini, openai, anthropic, openrouter)', 'gemini')
+  .option('--provider <provider>', 'LLM provider (gemini, openai, anthropic, openrouter, ollama)', 'gemini')
   .hook('preAction', (thisCommand) => {
     const opts = thisCommand.opts();
     if (opts.json) {

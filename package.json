@@ -2,18 +2,38 @@
   "name": "imprintcv",
   "version": "0.1.0",
   "description": "AI resume verification engine & ATS document compiler",
+  "author": "Vaibhav Misra",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vmlgtm/imprintcv.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vmlgtm/imprintcv/issues"
+  },
+  "homepage": "https://github.com/vmlgtm/imprintcv#readme",
+  "keywords": [
+    "resume",
+    "ats",
+    "career",
+    "mcp",
+    "typst",
+    "cli",
+    "ai",
+    "verification"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "imprintcv": "./dist/cli.js",
-    "imprintcv-mcp": "./dist/mcp/index.js"
+    "imprintcv": "dist/cli.js",
+    "imprintcv-mcp": "dist/mcp/index.js"
   },
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     }
   },
   "files": [
@@ -21,13 +41,15 @@
     "templates",
     "skills"
   ],
+  "sideEffects": false,
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "tsc --noEmit",
-    "doctor": "node dist/cli.js doctor"
+    "doctor": "node dist/cli.js doctor",
+    "prepublishOnly": "npm run lint && npm test && npm run build"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.1.10",
@@ -58,6 +80,5 @@
   },
   "engines": {
     "node": ">=20.0.0"
-  },
-  "license": "MIT"
+  }
 }
