@@ -1,8 +1,8 @@
 # ImprintCV
 
-[![CI](https://github.com/imprintcv/imprintcv/actions/workflows/ci.yml/badge.svg)](https://github.com/imprintcv/imprintcv/actions)
+[![CI](https://github.com/vmlgtm/imprintcv/actions/workflows/ci.yml/badge.svg)](https://github.com/vmlgtm/imprintcv/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![npm version](https://img.shields.io/badge/npm-0.1.0-orange.svg)](https://www.npmjs.com/package/imprintcv)
+[![npm version](https://img.shields.io/npm/v/imprintcv.svg)](https://www.npmjs.com/package/imprintcv)
 
 > *"AI can rewrite your resume. ImprintCV verifies that it doesn't rewrite your career."*
 
