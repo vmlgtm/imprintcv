@@ -190,16 +190,13 @@ ImprintCV includes 3 clean, ATS-tested templates:
 
 ---
 
-## Verification & Reliability Guarantees
+## Verification & Reliability
 
-ImprintCV includes an automated adversarial fuzzer and golden integration test suite:
+ImprintCV uses deterministic (zero-token) rule engines rather than LLM judges to enforce factual integrity:
 
-```bash
-npm test
-```
-
-- **Mutation Recall**: $\ge$ 98% detection rate on adversarial synthetic mutations (metric tampering, title fabrication, timeline shifting).
-- **False Positive Rate**: $\le$ 2% on valid factual paraphrases and reorderings.
+- **Deterministic Invariants**: Strict schema checks ensure dates, job titles, companies, and degrees can never be altered by the LLM.
+- **Metric Provenance**: Quantities, percentages, and currencies are extracted via AST/regex and verified against the candidate's source bullets.
+- **Adversarial Fuzzer & Golden Fixtures**: Evaluated continuously in CI (`npm test` via [`tests/evals/fuzzer.test.ts`](tests/evals/fuzzer.test.ts)) with a 15-category synthetic mutation suite achieving $\ge$ 98% detection rate on adversarial mutations and $\le$ 2% false positive rate on valid paraphrases.
 
 ---
 
