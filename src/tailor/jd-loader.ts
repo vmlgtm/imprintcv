@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import { APP_VERSION } from '../utils/version.js';
 
 export function extractTextFromHtml(html: string): string {
   // Strip script and style tags
@@ -53,7 +54,7 @@ export async function loadJD(source: string): Promise<string> {
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
     const res = await fetch(trimmed, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; ImprintCV/0.1.0; +https://imprintcv.org)',
+        'User-Agent': `Mozilla/5.0 (compatible; ImprintCV/${APP_VERSION}; +https://imprintcv.org)`,
       },
     });
     if (!res.ok) {

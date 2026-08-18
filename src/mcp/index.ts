@@ -10,11 +10,12 @@ import { verify } from '../verifier/index.js';
 import { compileTypstToPdf, type TemplateName } from '../render/typst-compiler.js';
 import { MasterResumeSchema, type MasterResume } from '../types/resume.js';
 import type { TailoredResume } from '../types/bundle.js';
+import { APP_VERSION } from '../utils/version.js';
 
 export function createImprintCVMcpServer(): McpServer {
   const server = new McpServer({
     name: 'imprintcv',
-    version: '0.1.0',
+    version: APP_VERSION,
   });
 
   // Tool 1: imprintcv_init

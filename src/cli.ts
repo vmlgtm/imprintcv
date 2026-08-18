@@ -16,13 +16,15 @@ import { MasterResumeSchema, type MasterResume } from './types/resume.js';
 import type { TailoredResume } from './types/bundle.js';
 import type { ProviderType } from './utils/llm.js';
 import type { TemplateName } from './render/typst-compiler.js';
+import { runMcpServer } from './mcp/index.js';
+import { APP_VERSION } from './utils/version.js';
 
 const program = new Command();
 
 program
   .name('imprintcv')
   .description('AI resume verification engine & ATS document compiler')
-  .version('0.1.0');
+  .version(APP_VERSION);
 
 // Global options
 program
@@ -300,6 +302,18 @@ program
     } catch (err) {
       error(`Doctor check failed: ${(err as Error).message}`);
       process.exit(2);
+    }
+  });
+
+program
+  .command('mcp')
+  .description('Start ImprintCV Model Context Protocol (MCP) server over stdio')
+  .action(async () => {
+    try {
+      await runMcpServer();
+    } catch (err) {
+      process.stderr.write(`MCP server fatal error: ${(err as Error).message}\n`);
+      process.exit(1);
     }
   });
 

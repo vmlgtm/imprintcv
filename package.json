@@ -1,6 +1,6 @@
 {
   "name": "imprintcv",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "AI resume verification engine & ATS document compiler",
   "author": "Vaibhav Misra",
   "license": "MIT",

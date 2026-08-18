@@ -31,7 +31,7 @@ Add to your MCP configuration (`claude_desktop_config.json`, Cursor Settings, `a
   "mcpServers": {
     "imprintcv": {
       "command": "npx",
-      "args": ["-y", "imprintcv-mcp"]
+      "args": ["-y", "imprintcv", "mcp"]
     }
   }
 }
@@ -169,6 +169,7 @@ applications/stripe-senior-software-engineer/
 | `imprintcv verify` | Run deterministic verification on an existing bundle | `imprintcv verify --tailored ./applications/stripe/` |
 | `imprintcv sync` | Merge verified improvements back into your Career Vault | `imprintcv sync --from ./applications/stripe/ --yes` |
 | `imprintcv doctor` | Check environment, API keys, and vault integrity | `imprintcv doctor` |
+| `imprintcv mcp` | Start Model Context Protocol (MCP) stdio server | `imprintcv mcp` |
 
 ### Key Flags
 
