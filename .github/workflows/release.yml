@@ -33,7 +33,7 @@ jobs:
       - name: Build Packages (CLI, Library, MCP Server)
         run: npm run build
 
-      - name: Publish to npm with Provenance
-        run: npm publish --provenance --access public
+      - name: Publish to npm
+        run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
