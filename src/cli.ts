@@ -16,7 +16,7 @@ import { MasterResumeSchema, type MasterResume } from './types/resume.js';
 import type { TailoredResume } from './types/bundle.js';
 import type { ProviderType } from './utils/llm.js';
 import type { TemplateName } from './render/typst-compiler.js';
-import { runMcpServer } from './mcp/index.js';
+import { runMcpServer } from './mcp/server.js';
 import { APP_VERSION } from './utils/version.js';
 
 const program = new Command();

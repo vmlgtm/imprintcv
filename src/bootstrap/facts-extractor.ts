@@ -20,14 +20,17 @@ function extractMetricsFromText(text: string): string[] {
   return Array.from(new Set(results));
 }
 
-function calculateYearsExperience(experience: MasterResume['experience']): number {
+export function calculateYearsExperience(experience: MasterResume['experience']): number {
   if (!experience || experience.length === 0) return 0;
-  let totalMonths = 0;
+
+  // 1. Convert each experience to a [startMonth, endMonth] interval (using months since epoch)
+  const intervals: [number, number][] = [];
 
   for (const exp of experience) {
     const startParts = exp.startDate.split('-').map(Number);
     const startYear = startParts[0] || 2020;
     const startMonth = startParts[1] || 1;
+    const startTotalMonths = startYear * 12 + startMonth;
 
     let endYear = new Date().getFullYear();
     let endMonth = new Date().getMonth() + 1;
@@ -38,10 +41,33 @@ function calculateYearsExperience(experience: MasterResume['experience']): numbe
       endMonth = endParts[1] || endMonth;
     }
 
-    const months = (endYear - startYear) * 12 + (endMonth - startMonth);
-    if (months > 0) {
-      totalMonths += months;
+    const endTotalMonths = endYear * 12 + endMonth;
+    if (endTotalMonths > startTotalMonths) {
+      intervals.push([startTotalMonths, endTotalMonths]);
     }
+  }
+
+  if (intervals.length === 0) return 0;
+
+  // 2. Sort intervals by start
+  intervals.sort((a, b) => a[0] - b[0]);
+
+  // 3. Merge overlapping intervals
+  const merged: [number, number][] = [intervals[0]];
+  for (let i = 1; i < intervals.length; i++) {
+    const curr = intervals[i];
+    const last = merged[merged.length - 1];
+    if (curr[0] <= last[1]) {
+      last[1] = Math.max(last[1], curr[1]);
+    } else {
+      merged.push([...curr]);
+    }
+  }
+
+  // 4. Sum merged intervals' durations
+  let totalMonths = 0;
+  for (const [start, end] of merged) {
+    totalMonths += end - start;
   }
 
   return Math.max(1, Math.round((totalMonths / 12) * 10) / 10);

@@ -44,4 +44,13 @@ describe('Phase 2: Privacy Sanitizer', () => {
     expect(sanitized).toBe(raw);
     expect(replacements.size).toBe(0);
   });
+
+  it('rejects malformed email strings with concatenated labels exceeding TLD cap', () => {
+    const raw = 'Contact vaibhav.misra92@outlook.comLinkedIn: linkedin.com/in/vaibhav-misra';
+    const { sanitized, replacements } = sanitizeText(raw);
+
+    // .comLinkedIn is 11 chars (> 10 max TLD length) so it should not match emailRegex
+    expect(sanitized).not.toContain('{{EMAIL_');
+    expect(replacements.size).toBe(0);
+  });
 });

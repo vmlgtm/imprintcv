@@ -3,7 +3,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { generateObject } from 'ai';
 import { z } from 'zod';
-import { type MasterResume } from '../types/resume.js';
+import { MasterResumeSchema, type MasterResume } from '../types/resume.js';
 import { parseResumeFile } from './parsers.js';
 import { sanitizeText, restoreText } from '../privacy/sanitizer.js';
 import { computeVaultHash } from '../utils/hash.js';
@@ -91,6 +91,59 @@ function normalizeDate(d?: string | null): string {
   return d;
 }
 
+export function matchTechKeyword(text: string, tech: string): boolean {
+  if (!tech || !text) return false;
+  const escaped = tech.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const startBound = /^\w/.test(tech) ? '\\b' : '';
+  const endBound = /\w$/.test(tech) ? '\\b' : '';
+  const regex = new RegExp(`${startBound}${escaped}${endBound}`, 'i');
+  return regex.test(text);
+}
+
+export function inferEndDates<T extends { startDate?: string | null; endDate?: string | null }>(
+  experiences: T[]
+): T[] {
+  if (!experiences || experiences.length === 0) return experiences;
+
+  const parseDateParts = (d?: string | null): { year: number; month: number } => {
+    if (!d) return { year: 2020, month: 1 };
+    const norm = normalizeDate(d);
+    if (/^\d{4}-\d{2}$/.test(norm)) {
+      const [y, m] = norm.split('-').map(Number);
+      return { year: y, month: m };
+    }
+    if (/^\d{4}$/.test(norm)) {
+      return { year: Number(norm), month: 1 };
+    }
+    return { year: 2020, month: 1 };
+  };
+
+  // Sort descending by startDate (most recent first)
+  const sorted = [...experiences].sort((a, b) => {
+    const da = parseDateParts(a.startDate);
+    const db = parseDateParts(b.startDate);
+    return db.year * 12 + db.month - (da.year * 12 + da.month);
+  });
+
+  for (let i = 1; i < sorted.length; i++) {
+    const exp = sorted[i];
+    const isPresentOrNull = !exp.endDate || /present|current|now/i.test(exp.endDate);
+    if (isPresentOrNull) {
+      // Infer from the chronologically later role (sorted[i - 1])
+      const nextStart = parseDateParts(sorted[i - 1].startDate);
+      let prevYear = nextStart.year;
+      let prevMonth = nextStart.month - 1;
+      if (prevMonth < 1) {
+        prevMonth = 12;
+        prevYear -= 1;
+      }
+      exp.endDate = `${prevYear}-${String(prevMonth).padStart(2, '0')}`;
+    }
+  }
+
+  return sorted;
+}
+
 function assignStableIds(rawResume: Partial<ExtractedData>): MasterResume {
   const sanitizeId = (str: string) =>
     str
@@ -100,22 +153,37 @@ function assignStableIds(rawResume: Partial<ExtractedData>): MasterResume {
       .replace(/_+/g, '_')
       .replace(/^_|_$/g, '') || 'item';
 
+  const allSkillsList = (rawResume.skills || []).map((s) => s.name).filter(Boolean);
+
   const experience = (rawResume.experience || []).map((exp, expIdx) => {
     const compSlug = sanitizeId(exp.company || `exp_${expIdx}`);
     const titleSlug = sanitizeId(exp.title || 'role');
     const expId = `exp_${compSlug}_${titleSlug}`;
-    
+
+    const candidateTechs = Array.from(
+      new Set([
+        ...(exp.technologies || []),
+        ...allSkillsList,
+      ])
+    );
+
     const highlights = (exp.bullets || []).map((bText, hIdx) => {
       const numStr = String(hIdx + 1).padStart(2, '0');
+      const matchedTechs = candidateTechs.filter((tech) => matchTechKeyword(bText, tech));
+      const bulletTechs = matchedTechs.length > 0 ? matchedTechs : (exp.technologies || []);
       return {
         id: `bullet_${compSlug}_${titleSlug}_${numStr}`,
         text: bText,
-        technologies: exp.technologies || [],
+        technologies: bulletTechs,
       };
     });
 
     const normStart = normalizeDate(exp.startDate) || '2020-01';
     const normEnd = exp.endDate && !/present|current|now/i.test(exp.endDate) ? normalizeDate(exp.endDate) : null;
+
+    const experienceTechs = (exp.technologies && exp.technologies.length > 0)
+      ? exp.technologies
+      : Array.from(new Set(highlights.flatMap((h) => h.technologies)));
 
     return {
       id: expId,
@@ -125,7 +193,7 @@ function assignStableIds(rawResume: Partial<ExtractedData>): MasterResume {
       startDate: normStart,
       endDate: normEnd,
       highlights,
-      technologies: exp.technologies || [],
+      technologies: experienceTechs,
     };
   });
 
@@ -180,6 +248,11 @@ function assignStableIds(rawResume: Partial<ExtractedData>): MasterResume {
     projects,
   };
 
+  if (resumeWithoutMeta.basics.website && /linkedin\.com/i.test(resumeWithoutMeta.basics.website) && !resumeWithoutMeta.basics.linkedin) {
+    resumeWithoutMeta.basics.linkedin = resumeWithoutMeta.basics.website;
+    resumeWithoutMeta.basics.website = undefined;
+  }
+
   const hash = computeVaultHash(resumeWithoutMeta as unknown as MasterResume);
 
   return {
@@ -216,6 +289,8 @@ export async function bootstrapCareerVault(options: InitOptions): Promise<{
       prompt: `You are an expert career data extractor. Parse the following sanitized resume text into structured data.
 
 CRITICAL INSTRUCTION: For every work experience entry, extract every single achievement, bullet point, or responsibility into the \`bullets\` array as a list of strings. Include all bullet points under any subheadings (e.g. "AI & Platform Impact", "Full-Stack & System Design", "Product Velocity", "Platform & Reliability", "Leadership"). Never leave \`bullets\` empty.
+
+CRITICAL: Only the CURRENT/active role should have endDate as 'Present' or null. All PAST roles MUST have a concrete end date (e.g. 'Mar 2024'). Look for date ranges like 'Jan 2022 – Mar 2024' next to each role title.
 
 Extract candidate full name, contact info, professional summary, complete work experiences, skills, education, and projects.
 Ensure start and end dates (e.g. "Apr 2024", "Jan 2022", "Sep 2020", "Mar 2017", "Present") are captured accurately.
@@ -259,7 +334,16 @@ ${sanitized}`,
     }
   }
 
+  if (extractedResume.experience && extractedResume.experience.length > 0) {
+    extractedResume.experience = inferEndDates(extractedResume.experience);
+  }
+
   const masterResume = assignStableIds(extractedResume);
+
+  const validation = MasterResumeSchema.safeParse(masterResume);
+  if (!validation.success) {
+    warn(`Master resume schema validation warning: ${validation.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')}`);
+  }
 
   const vaultDir = options.vaultPath ? path.resolve(options.vaultPath) : getDefaultVaultDir();
   await fs.mkdir(vaultDir, { recursive: true });

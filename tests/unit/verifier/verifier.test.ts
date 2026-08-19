@@ -153,4 +153,42 @@ describe('Phase 3: Verifier Orchestrator & Status Contract', () => {
     expect(report.status).toBe('FAIL');
     expect(report.errorCount).toBeGreaterThan(0);
   });
+
+  it('emits WARNING when a source bullet belongs to a different company experience section', () => {
+    const tailored: TailoredResume = {
+      targetRole: 'Staff Backend Engineer',
+      targetCompany: 'Uber',
+      basics: master.basics,
+      experience: [
+        {
+          id: 'exp_google', // Target experience ID is exp_google, but bullet is from exp_stripe
+          company: 'Google',
+          title: 'Staff Engineer',
+          startDate: '2021-01',
+          endDate: null,
+          technologies: ['Go', 'Kafka'],
+          bullets: [
+            {
+              id: 'bullet_google_01',
+              sourceBulletIds: ['bullet_stripe_01'], // Source belongs to exp_stripe
+              sourceFactIds: [],
+              original: master.experience[0].highlights[0].text,
+              tailored: 'Architected payment processing engine handling 50,000 req/sec using Go and Kafka.',
+              status: 'REWORDED',
+              matchedKeywords: ['Go', 'Kafka'],
+            },
+          ],
+        },
+      ],
+      skills: master.skills,
+      education: master.education,
+    };
+
+    const report = verify(master, tailored);
+    const mismatchWarning = report.issues.find(
+      (i) => i.reason === 'PROVENANCE_MISMATCH' && i.severity === 'WARNING'
+    );
+    expect(mismatchWarning).toBeDefined();
+    expect(mismatchWarning?.factsOriginal).toContain('belongs to "exp_stripe", not "exp_google"');
+  });
 });

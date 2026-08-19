@@ -8,7 +8,7 @@ export function sanitizeText(text: string): SanitizationResult {
   let count = 1;
 
   // 1. Email addresses
-  const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
+  const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,10}\b/g;
   let sanitized = text.replace(emailRegex, (match) => {
     const token = `{{EMAIL_${count++}}}`;
     replacements.set(token, match);

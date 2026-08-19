@@ -49,10 +49,12 @@ export async function runDiagnostics(customVaultPath?: string): Promise<Diagnost
   const vaultDir = customVaultPath ? path.resolve(customVaultPath) : getDefaultVaultDir();
   let vaultPassed = false;
   let vaultMsg = '';
+  let parsedResume: any = null;
   try {
     const jsonPath = path.join(vaultDir, 'master_resume.json');
     const content = await fs.readFile(jsonPath, 'utf-8');
     const parsed = JSON.parse(content);
+    parsedResume = parsed;
     vaultPassed = parsed.metadata?.vaultHash !== undefined;
     vaultMsg = vaultPassed
       ? `Vault present at ${vaultDir} (Hash: ${parsed.metadata.vaultHash.slice(0, 8)}...)`
@@ -65,6 +67,69 @@ export async function runDiagnostics(customVaultPath?: string): Promise<Diagnost
     passed: vaultPassed,
     message: vaultMsg,
   });
+
+  // Data quality checks
+  if (parsedResume) {
+    if (Array.isArray(parsedResume.experience)) {
+      // 3a. Warn if >1 experience has endDate: null (multiple "Present" roles)
+      const activeRoles = parsedResume.experience.filter(
+        (e: any) => !e.endDate || /present|current|now/i.test(e.endDate)
+      );
+      const singleActivePassed = activeRoles.length <= 1;
+      checks.push({
+        name: 'Vault Quality: Active Roles',
+        passed: singleActivePassed,
+        message: singleActivePassed
+          ? `Single active role found (${activeRoles[0]?.company || 'None'})`
+          : `Found ${activeRoles.length} roles marked as Present/active (${activeRoles.map((e: any) => e.company).join(', ')})`,
+      });
+
+      // 3b. Warn if any experience has empty technologies array
+      const emptyTechRoles = parsedResume.experience.filter(
+        (e: any) => !e.technologies || e.technologies.length === 0
+      );
+      const techPassed = emptyTechRoles.length === 0;
+      checks.push({
+        name: 'Vault Quality: Role Technologies',
+        passed: techPassed,
+        message: techPassed
+          ? 'All experience entries specify technologies'
+          : `Roles missing technologies: ${emptyTechRoles.map((e: any) => e.company || e.id).join(', ')}`,
+      });
+
+      // 3c. Warn if experiences are not in chronological order
+      let chronologicalPassed = true;
+      let chronoMsg = 'Experience entries are ordered chronologically';
+      if (parsedResume.experience.length > 1) {
+        for (let i = 0; i < parsedResume.experience.length - 1; i++) {
+          const currStart = parsedResume.experience[i].startDate || '';
+          const nextStart = parsedResume.experience[i + 1].startDate || '';
+          if (currStart && nextStart && currStart < nextStart) {
+            chronologicalPassed = false;
+            chronoMsg = `Experience order mismatch: "${parsedResume.experience[i].company}" (${currStart}) is older than following role "${parsedResume.experience[i + 1].company}" (${nextStart})`;
+            break;
+          }
+        }
+      }
+      checks.push({
+        name: 'Vault Quality: Chronological Order',
+        passed: chronologicalPassed,
+        message: chronoMsg,
+      });
+    }
+
+    // 3d. Warn if basics.email doesn't look like a valid email
+    const email = parsedResume.basics?.email || '';
+    const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,10}$/;
+    const emailPassed = emailRegex.test(email);
+    checks.push({
+      name: 'Vault Quality: Email Format',
+      passed: emailPassed,
+      message: emailPassed
+        ? `Valid email format (${email})`
+        : `Malformed or missing candidate email: "${email}"`,
+    });
+  }
 
   // 4. LLM Provider API Keys & Local Endpoints
   const providersFound: string[] = [];
@@ -89,7 +154,13 @@ export async function runDiagnostics(customVaultPath?: string): Promise<Diagnost
         : 'No API keys set (fallback mode active; set GOOGLE_GENERATIVE_AI_API_KEY for free tier or run Ollama)',
   });
 
-  const hasErrors = checks.filter((c) => !c.passed && c.name !== 'LLM API Providers' && c.name !== 'Career Vault').length > 0;
+  const hasErrors = checks.filter(
+    (c) =>
+      !c.passed &&
+      c.name !== 'LLM API Providers' &&
+      c.name !== 'Career Vault' &&
+      !c.name.startsWith('Vault Quality')
+  ).length > 0;
   const status = hasErrors ? 'ERROR' : checks.some((c) => !c.passed) ? 'WARNING' : 'OK';
 
   return {

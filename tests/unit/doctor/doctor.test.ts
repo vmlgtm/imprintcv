@@ -17,4 +17,27 @@ describe('Phase 6: Doctor Diagnostics', () => {
     expect(typstCheck).toBeDefined();
     expect(typstCheck?.passed).toBe(true);
   });
+
+  it('evaluates data quality checks when a vault directory is provided', async () => {
+    // Tests with fixtures/senior-frontend vault directory
+    const path = await import('node:path');
+    const fixtureVault = path.resolve(__dirname, '../../fixtures/senior-frontend');
+    const report = await runDiagnostics(fixtureVault);
+
+    const vaultCheck = report.checks.find((c) => c.name === 'Career Vault');
+    expect(vaultCheck?.passed).toBe(true);
+
+    const activeCheck = report.checks.find((c) => c.name === 'Vault Quality: Active Roles');
+    expect(activeCheck).toBeDefined();
+
+    const techCheck = report.checks.find((c) => c.name === 'Vault Quality: Role Technologies');
+    expect(techCheck).toBeDefined();
+
+    const emailCheck = report.checks.find((c) => c.name === 'Vault Quality: Email Format');
+    expect(emailCheck).toBeDefined();
+    expect(emailCheck?.passed).toBe(true);
+
+    const chronoCheck = report.checks.find((c) => c.name === 'Vault Quality: Chronological Order');
+    expect(chronoCheck).toBeDefined();
+  });
 });

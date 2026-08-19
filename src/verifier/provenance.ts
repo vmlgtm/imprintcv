@@ -69,6 +69,16 @@ export function checkProvenance(
             repairAction: `Use existing canonical bullet ID from Career Vault`,
           });
         } else {
+          if (found.companyId !== tExp.id) {
+            issues.push({
+              field,
+              claim: bullet.tailored,
+              reason: 'PROVENANCE_MISMATCH',
+              factsOriginal: `Source bullet "${sId}" belongs to "${found.companyId}", not "${tExp.id}"`,
+              severity: 'WARNING',
+              repairAction: `Move bullet to correct experience section "${found.companyId}" or use a source bullet from "${tExp.id}"`,
+            });
+          }
           sourceTexts.push(found.text);
           sourceTechs.push(...found.technologies);
         }
