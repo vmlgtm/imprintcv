@@ -35,8 +35,14 @@ Call `imprintcv_verify_draft({ tailoredResumeJson, masterResumeJson, coverLetter
 - If status is `PASS` or `PASS_WITH_WARNINGS`: Proceed to compilation.
 - If status is `FAIL`: Inspect each issue's `repairAction`, update the contradicted bullets, and re-verify.
 
-### 4. Compile the PDF
-Call `imprintcv_compile_pdf({ tailoredResumeJson, template: 'modern', outputPath: 'applications/<job-slug>/resume.pdf' })`.
+### 4. Save the Complete Application Bundle
+Call `imprintcv_save_application({ tailoredResumeJson, coverLetter?, template: 'modern', targetPages: 1 })`.
+- Automatically computes canonical directory slug (e.g. `applications/<company>-<role>/`).
+- Compiles ATS PDF with multi-step page-budgeting.
+- Generates side-by-side diff (`resume.md`), RenderCV YAML (`resume.yaml`), `resume.json`, and `verification.json`.
+- Saves `cover_letter.md` if `coverLetter` is provided.
+
+*(Alternatively, use `imprintcv_compile_pdf` if you only need an isolated PDF without saving the full bundle).*
 
 ---
 
@@ -45,4 +51,5 @@ Call `imprintcv_compile_pdf({ tailoredResumeJson, template: 'modern', outputPath
 1. `imprintcv_init({ sourcePath, vaultPath? })` — Convert legacy resume to Career Vault.
 2. `imprintcv_get_facts({ vaultPath? })` — Retrieve structured facts with stable IDs.
 3. `imprintcv_verify_draft({ tailoredResumeJson, masterResumeJson?, coverLetter? })` — Layer 1-3 consistency verification.
-4. `imprintcv_compile_pdf({ tailoredResumeJson, template?, outputPath? })` — Compile ATS-optimized PDF via Typst WASM.
+4. `imprintcv_save_application({ tailoredResumeJson, coverLetter?, template?, targetPages?, outputBaseDir? })` — Save complete verified bundle (PDF, JSON, RenderCV YAML, Diff MD, Verification Report, Cover Letter) with page budgeting.
+5. `imprintcv_compile_pdf({ tailoredResumeJson, template?, outputPath?, targetPages? })` — Compile ATS-optimized PDF via Typst WASM with page budgeting.

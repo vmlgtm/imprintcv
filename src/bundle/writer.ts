@@ -48,11 +48,28 @@ export function generateSideBySideDiffMarkdown(resume: TailoredResume, verificat
   return lines.join('\n');
 }
 
+function synthesizePlanFromResume(resume: TailoredResume): TailoringPlan {
+  return {
+    targetRole: resume.targetRole,
+    targetCompany: resume.targetCompany,
+    strategySummary: `Tailored resume for ${resume.targetRole} at ${resume.targetCompany}`,
+    experiencePlan: resume.experience.map((exp) => ({
+      companyId: exp.id,
+      reorder: exp.bullets.map((b) => b.id),
+      rewrite: exp.bullets.filter((b) => b.status === 'REWORDED').map((b) => b.id),
+      compress: [],
+      remove: [],
+    })),
+    emphasizedSkills: resume.skills.map((s) => s.name),
+    omittedSkills: [],
+  };
+}
+
 export async function writeApplicationBundle(
   tailoredResume: TailoredResume,
-  tailoringPlan: TailoringPlan,
-  verificationReport: VerificationReport,
-  coverLetter: string,
+  tailoringPlan?: TailoringPlan,
+  verificationReport?: VerificationReport,
+  coverLetter?: string,
   options: WriteBundleOptions = {}
 ): Promise<{
   bundleDir: string;
@@ -60,7 +77,7 @@ export async function writeApplicationBundle(
   jsonPath: string;
   mdPath: string;
   yamlPath: string;
-  clPath: string;
+  clPath?: string;
   planPath: string;
   verifPath: string;
 }> {
@@ -84,25 +101,37 @@ export async function writeApplicationBundle(
   await fs.writeFile(jsonPath, JSON.stringify(tailoredResume, null, 2), 'utf-8');
 
   // 3. resume.md (side by side diff)
+  const report = verificationReport || {
+    status: 'PASS',
+    errorCount: 0,
+    warningCount: 0,
+    issues: [],
+    metricsVerified: 0,
+    skillsMatched: [],
+  };
   const mdPath = path.join(bundleDir, 'resume.md');
-  const diffMarkdown = generateSideBySideDiffMarkdown(tailoredResume, verificationReport);
+  const diffMarkdown = generateSideBySideDiffMarkdown(tailoredResume, report);
   await fs.writeFile(mdPath, diffMarkdown, 'utf-8');
 
   // 4. resume.yaml (RenderCV)
   const yamlPath = path.join(bundleDir, 'resume.yaml');
   await fs.writeFile(yamlPath, exportRenderCV(tailoredResume), 'utf-8');
 
-  // 5. cover_letter.md
-  const clPath = path.join(bundleDir, 'cover_letter.md');
-  await fs.writeFile(clPath, coverLetter, 'utf-8');
+  // 5. cover_letter.md (optional)
+  let clPath: string | undefined;
+  if (coverLetter && coverLetter.trim().length > 0) {
+    clPath = path.join(bundleDir, 'cover_letter.md');
+    await fs.writeFile(clPath, coverLetter, 'utf-8');
+  }
 
   // 6. tailoring_plan.json
+  const plan = tailoringPlan || synthesizePlanFromResume(tailoredResume);
   const planPath = path.join(bundleDir, 'tailoring_plan.json');
-  await fs.writeFile(planPath, JSON.stringify(tailoringPlan, null, 2), 'utf-8');
+  await fs.writeFile(planPath, JSON.stringify(plan, null, 2), 'utf-8');
 
   // 7. verification.json
   const verifPath = path.join(bundleDir, 'verification.json');
-  await fs.writeFile(verifPath, JSON.stringify(verificationReport, null, 2), 'utf-8');
+  await fs.writeFile(verifPath, JSON.stringify(report, null, 2), 'utf-8');
 
   if (spinner) spinner.succeed(`Application bundle written to: ${bundleDir}`);
 

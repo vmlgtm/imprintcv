@@ -6,7 +6,9 @@ import { z } from 'zod';
 import { bootstrapCareerVault, getDefaultVaultDir } from '../bootstrap/init.js';
 import { extractFacts } from '../bootstrap/facts-extractor.js';
 import { verify } from '../verifier/index.js';
+import { compileWithBudget } from '../render/page-budget.js';
 import { compileTypstToPdf, type TemplateName } from '../render/typst-compiler.js';
+import { writeApplicationBundle } from '../bundle/writer.js';
 import { MasterResumeSchema, type MasterResume } from '../types/resume.js';
 import type { TailoredResume } from '../types/bundle.js';
 import { APP_VERSION } from '../utils/version.js';
@@ -132,21 +134,119 @@ export function createImprintCVMcpServer(): McpServer {
     }
   );
 
-  // Tool 4: imprintcv_compile_pdf
+  // Tool 4: imprintcv_save_application
+  server.tool(
+    'imprintcv_save_application',
+    'Save complete verified application bundle (PDF, JSON, RenderCV YAML, Diff MD, Verification Report, and optional Cover Letter) into applications/<job-slug>/ with page budgeting.',
+    {
+      tailoredResumeJson: z.string().describe('JSON string of TailoredResume object'),
+      masterResumeJson: z.string().optional().describe('Optional JSON string of MasterResume (defaults to loading from Career Vault)'),
+      coverLetter: z.string().optional().describe('Optional cover letter markdown text to verify and save'),
+      template: z.enum(['modern', 'classic', 'contemporary']).default('modern').describe('Typst template'),
+      targetPages: z.number().default(1).describe('Target page budget constraint (1 or 2)'),
+      outputBaseDir: z.string().optional().describe('Custom base directory for applications (defaults to ./applications)'),
+      vaultPath: z.string().optional().describe('Custom path to Career Vault directory'),
+    },
+    async ({ tailoredResumeJson, masterResumeJson, coverLetter, template, targetPages, outputBaseDir, vaultPath }) => {
+      try {
+        let masterResume: MasterResume;
+        if (masterResumeJson) {
+          masterResume = MasterResumeSchema.parse(JSON.parse(masterResumeJson));
+        } else {
+          const vaultDir = vaultPath ? path.resolve(vaultPath) : getDefaultVaultDir();
+          const jsonPath = path.join(vaultDir, 'master_resume.json');
+          const raw = await fs.readFile(jsonPath, 'utf-8');
+          masterResume = MasterResumeSchema.parse(JSON.parse(raw));
+        }
+
+        const tailoredResume: TailoredResume = JSON.parse(tailoredResumeJson);
+        const verificationReport = verify(masterResume, tailoredResume, coverLetter);
+
+        if (verificationReport.status === 'FAIL') {
+          return {
+            isError: true,
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'VERIFICATION_FAILED',
+                    message: 'Cannot save application bundle: Deterministic verification failed. Please repair the contradicted claims first.',
+                    verification: verificationReport,
+                  },
+                  null,
+                  2
+                ),
+              },
+            ],
+          };
+        }
+
+        const bundle = await writeApplicationBundle(
+          tailoredResume,
+          undefined,
+          verificationReport,
+          coverLetter,
+          {
+            outputBaseDir,
+            template: template as TemplateName,
+            targetPages,
+          }
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  status: 'SUCCESS',
+                  verificationStatus: verificationReport.status,
+                  bundleDir: bundle.bundleDir,
+                  targetPages,
+                  artifacts: {
+                    pdf: bundle.pdfPath,
+                    json: bundle.jsonPath,
+                    diffMarkdown: bundle.mdPath,
+                    rendercvYaml: bundle.yamlPath,
+                    verificationReport: bundle.verifPath,
+                    tailoringPlan: bundle.planPath,
+                    coverLetter: bundle.clPath,
+                  },
+                },
+                null,
+                2
+              ),
+            },
+          ],
+        };
+      } catch (err) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Save Application Error: ${(err as Error).message}` }],
+        };
+      }
+    }
+  );
+
+  // Tool 5: imprintcv_compile_pdf
   server.tool(
     'imprintcv_compile_pdf',
-    'Compile a verified tailored resume into an ATS-optimized PDF using in-memory Typst WASM.',
+    'Compile a verified tailored resume into an ATS-optimized PDF using in-memory Typst WASM with page budgeting.',
     {
       tailoredResumeJson: z.string().describe('JSON string of TailoredResume object'),
       template: z.enum(['modern', 'classic', 'contemporary']).default('modern').describe('Typst template'),
       outputPath: z.string().optional().describe('Optional output file path to write PDF to'),
+      targetPages: z.number().optional().default(1).describe('Target page budget constraint (1 or 2)'),
     },
-    async ({ tailoredResumeJson, template, outputPath }) => {
+    async ({ tailoredResumeJson, template, outputPath, targetPages }) => {
       try {
         const tailoredResume: TailoredResume = JSON.parse(tailoredResumeJson);
-        const pdfBytes = await compileTypstToPdf(tailoredResume, {
-          template: template as TemplateName,
-        });
+        const { pdfBytes, pageCount, adjustmentsApplied } = await compileWithBudget(
+          tailoredResume,
+          template as TemplateName,
+          targetPages || 1
+        );
 
         if (outputPath) {
           const resolvedOut = path.resolve(outputPath);
@@ -156,7 +256,17 @@ export function createImprintCVMcpServer(): McpServer {
             content: [
               {
                 type: 'text',
-                text: JSON.stringify({ status: 'SUCCESS', outputPath: resolvedOut, sizeBytes: pdfBytes.length }, null, 2),
+                text: JSON.stringify(
+                  {
+                    status: 'SUCCESS',
+                    outputPath: resolvedOut,
+                    sizeBytes: pdfBytes.length,
+                    pageCount,
+                    adjustmentsApplied,
+                  },
+                  null,
+                  2
+                ),
               },
             ],
           };
@@ -170,6 +280,8 @@ export function createImprintCVMcpServer(): McpServer {
                 status: 'SUCCESS',
                 pdfBase64: Buffer.from(pdfBytes).toString('base64'),
                 sizeBytes: pdfBytes.length,
+                pageCount,
+                adjustmentsApplied,
               }),
             },
           ],

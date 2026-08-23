@@ -41,27 +41,28 @@ Add to your MCP configuration (`claude_desktop_config.json`, Cursor Settings, `a
 When you ask your agent to tailor a resume, it executes an autonomous **verify-and-repair loop**:
 
 ```
-┌──────────────┐     1. imprintcv_get_facts      ┌──────────────────┐
-│              │ ──────────────────────────────▶ │  Career Vault    │
-│              │ ◀────────────────────────────── │  (Immutable)     │
+┌──────────────┐     1. imprintcv_get_facts        ┌──────────────────┐
+│              │ ────────────────────────────────▶ │  Career Vault    │
+│              │ ◀──────────────────────────────── │  (Immutable)     │
 │   AI Agent   │
-│ (Claude Code │     2. imprintcv_verify_draft   ┌──────────────────┐
-│   Cursor,    │ ──────────────────────────────▶ │ ImprintCV Engine │
-│ Antigravity) │ ◀────────────────────────────── │ (Pass / Repairs) │
-│              │       [Loop until verified]     └──────────────────┘
+│ (Claude Code │     2. imprintcv_verify_draft     ┌──────────────────┐
+│   Cursor,    │ ────────────────────────────────▶ │ ImprintCV Engine │
+│ Antigravity) │ ◀──────────────────────────────── │ (Pass / Repairs) │
+│              │       [Loop until verified]       └──────────────────┘
 │              │
-│              │     3. imprintcv_compile_pdf    ┌──────────────────┐
-│              │ ──────────────────────────────▶ │ ATS PDF (~30ms)  │
-└──────────────┘                                 └──────────────────┘
+│              │     3. imprintcv_save_application ┌──────────────────┐
+│              │ ────────────────────────────────▶ │ Full App Bundle  │
+│              │ ◀──────────────────────────────── │ (PDF, YAML, MD)  │
+└──────────────┘                                   └──────────────────┘
 ```
 
 1. **Fetches Canonical Facts**: The agent reads your verified career facts via `imprintcv_get_facts`.
 2. **Drafts Tailored Content**: The agent reorders and highlights relevant experience while preserving stable source bullet IDs.
 3. **Deterministic Verification**: The agent calls `imprintcv_verify_draft`. If any metric inflation or title changes are detected, ImprintCV returns structured repair instructions so the agent can fix them.
-4. **Instant PDF Compilation**: Once verified, the agent compiles the PDF via `imprintcv_compile_pdf`.
+4. **Complete Bundle Generation**: Once verified, the agent calls `imprintcv_save_application` to write the ATS PDF, RenderCV YAML, side-by-side diff, and optional cover letter into `applications/<job-slug>/` with page-budgeting.
 
 **Example Agent Prompt:**
-> *"Tailor my resume for this Staff Engineer opening: https://stripe.com/jobs/12345. Fetch my facts from ImprintCV, verify the draft to ensure zero hallucinations, and compile a single-page PDF."*
+> *"Tailor my resume for this Staff Engineer opening: https://stripe.com/jobs/12345. Fetch my facts from ImprintCV, verify the draft to ensure zero hallucinations, and save the complete verified application bundle."*
 
 *(Also ships with a drop-in skill at `skills/imprintcv/SKILL.md` compatible with Pi, Claude Code, and Antigravity).*
 
