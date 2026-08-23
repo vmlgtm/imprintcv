@@ -64,7 +64,17 @@ When you ask your agent to tailor a resume, it executes an autonomous **verify-a
 **Example Agent Prompt:**
 > *"Tailor my resume for this Staff Engineer opening: https://stripe.com/jobs/12345. Fetch my facts from ImprintCV, verify the draft to ensure zero hallucinations, and save the complete verified application bundle."*
 
-*(Also ships with a drop-in skill at `skills/imprintcv/SKILL.md` compatible with Pi, Claude Code, and Antigravity).*
+#### MCP Tools Reference
+
+| Tool | Description | Parameters |
+| :--- | :--- | :--- |
+| `imprintcv_get_facts` | Retrieve immutable structured facts with stable bullet IDs and verified metrics | `vaultPath?` |
+| `imprintcv_verify_draft` | Deterministically verify tailored draft against Career Vault (Layer 1–3 checks) | `tailoredResumeJson`, `coverLetter?`, `masterResumeJson?` |
+| `imprintcv_save_application` | Save complete verified bundle (PDF, JSON, RenderCV YAML, Diff MD, Report, Cover Letter) | `tailoredResumeJson`, `coverLetter?`, `template?`, `targetPages?`, `outputBaseDir?` |
+| `imprintcv_compile_pdf` | Compile standalone ATS-optimized PDF via in-memory Typst WASM with page budgeting | `tailoredResumeJson`, `template?`, `outputPath?`, `targetPages?` |
+| `imprintcv_init` | Bootstrap master Career Vault from legacy resume PDF/DOCX/TXT | `sourcePath`, `vaultPath?` |
+
+*(Also ships with an optional drop-in skill at `skills/imprintcv/SKILL.md` compatible with Pi, Claude Code, and Antigravity).*
 
 ---
 
