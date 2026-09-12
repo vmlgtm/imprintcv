@@ -96,7 +96,7 @@ describe('Phase 7: MCP Server & Tools', () => {
     } catch {}
   });
 
-  it('instantiates MCP server with all 5 tools registered', () => {
+  it('instantiates MCP server with all 8 tools registered', () => {
     const server = createImprintCVMcpServer();
     expect(server).toBeDefined();
 
@@ -108,6 +108,9 @@ describe('Phase 7: MCP Server & Tools', () => {
     expect(registeredTools['imprintcv_verify_draft']).toBeDefined();
     expect(registeredTools['imprintcv_save_application']).toBeDefined();
     expect(registeredTools['imprintcv_compile_pdf']).toBeDefined();
+    expect(registeredTools['imprintcv_analyze_jd']).toBeDefined();
+    expect(registeredTools['imprintcv_list_applications']).toBeDefined();
+    expect(registeredTools['imprintcv_get_schema']).toBeDefined();
   });
 
   it('imprintcv_save_application generates complete application bundle with all 7 artifacts', async () => {
@@ -207,5 +210,161 @@ describe('Phase 7: MCP Server & Tools', () => {
 
     const pdfStat = await fs.stat(outputPath);
     expect(pdfStat.size).toBe(result.sizeBytes);
+  });
+
+  it('imprintcv_analyze_jd analyzes JD compatibility and returns 3-tier gap report', async () => {
+    const server = createImprintCVMcpServer();
+    const registeredTools = (server as unknown as { _registeredTools: Record<string, { handler: (args: unknown) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> }> })._registeredTools;
+
+    const analyzeTool = registeredTools['imprintcv_analyze_jd'];
+    expect(analyzeTool).toBeDefined();
+
+    // Write master resume to temp dir
+    await fs.writeFile(path.join(tempDir, 'master_resume.json'), JSON.stringify(sampleMaster, null, 2), 'utf-8');
+
+    const jdText = `We are looking for a Senior Engineer with deep TypeScript, Node.js, and Swift experience.`;
+    const response = await analyzeTool.handler({
+      jd: jdText,
+      vaultPath: tempDir,
+    });
+
+    expect(response.isError).toBeFalsy();
+    const result = JSON.parse(response.content[0].text);
+    expect(result.score).toBeGreaterThan(0);
+    expect(result.coveredSkills).toContain('typescript');
+    expect(result.trueSkillGaps).toContain('swift');
+  });
+
+  it('imprintcv_list_applications lists registered applications from directory', async () => {
+    const server = createImprintCVMcpServer();
+    const registeredTools = (server as unknown as { _registeredTools: Record<string, { handler: (args: unknown) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> }> })._registeredTools;
+
+    const listTool = registeredTools['imprintcv_list_applications'];
+    expect(listTool).toBeDefined();
+
+    const response = await listTool.handler({
+      applicationsDir: tempDir,
+    });
+
+    expect(response.isError).toBeFalsy();
+    const result = JSON.parse(response.content[0].text);
+    expect(Array.isArray(result.applications)).toBe(true);
+  });
+
+  it('imprintcv_get_schema returns full JSON schema, valid example, and guidelines', async () => {
+    const server = createImprintCVMcpServer();
+    const registeredTools = (server as unknown as { _registeredTools: Record<string, { handler: (args: unknown) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> }> })._registeredTools;
+
+    const schemaTool = registeredTools['imprintcv_get_schema'];
+    expect(schemaTool).toBeDefined();
+
+    const response = await schemaTool.handler({});
+    expect(response.isError).toBeFalsy();
+    const result = JSON.parse(response.content[0].text);
+    expect(result.status).toBe('SUCCESS');
+    expect(result.schema).toBeDefined();
+    expect(result.schema.type).toBe('object');
+    expect(result.schema.properties.targetRole).toBeDefined();
+    expect(result.schema.properties.experience).toBeDefined();
+    expect(result.example).toBeDefined();
+    expect(result.example.targetRole).toBe('Staff Infrastructure Engineer');
+    expect(Array.isArray(result.guidance)).toBe(true);
+  });
+
+  it('imprintcv_verify_draft returns INVALID_JSON on malformed JSON string', async () => {
+    const server = createImprintCVMcpServer();
+    const registeredTools = (server as unknown as { _registeredTools: Record<string, { handler: (args: unknown) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> }> })._registeredTools;
+
+    const verifyTool = registeredTools['imprintcv_verify_draft'];
+
+    const response = await verifyTool.handler({
+      tailoredResumeJson: '{ "targetRole": "Engineer", unclosed_json...',
+      masterResumeJson: JSON.stringify(sampleMaster),
+    });
+
+    expect(response.isError).toBe(true);
+    const result = JSON.parse(response.content[0].text);
+    expect(result.status).toBe('INVALID_JSON');
+    expect(result.message).toContain('Malformed JSON string');
+  });
+
+  it('imprintcv_verify_draft returns INVALID_SCHEMA with structured errors on missing required fields', async () => {
+    const server = createImprintCVMcpServer();
+    const registeredTools = (server as unknown as { _registeredTools: Record<string, { handler: (args: unknown) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> }> })._registeredTools;
+
+    const verifyTool = registeredTools['imprintcv_verify_draft'];
+
+    const response = await verifyTool.handler({
+      tailoredResumeJson: JSON.stringify({
+        // missing targetRole, targetCompany, basics
+        experience: [],
+      }),
+      masterResumeJson: JSON.stringify(sampleMaster),
+    });
+
+    expect(response.isError).toBe(true);
+    const result = JSON.parse(response.content[0].text);
+    expect(result.status).toBe('INVALID_SCHEMA');
+    expect(result.errors).toBeDefined();
+    expect(result.errors.targetRole).toBeDefined();
+    expect(result.errors.targetCompany).toBeDefined();
+  });
+
+  it('imprintcv_verify_draft accepts structured tailoredResume object directly', async () => {
+    const server = createImprintCVMcpServer();
+    const registeredTools = (server as unknown as { _registeredTools: Record<string, { handler: (args: unknown) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> }> })._registeredTools;
+
+    const verifyTool = registeredTools['imprintcv_verify_draft'];
+
+    const response = await verifyTool.handler({
+      tailoredResume: sampleTailored, // structured object, NOT stringified!
+      masterResume: sampleMaster,
+    });
+
+    expect(response.isError).toBeFalsy();
+    const result = JSON.parse(response.content[0].text);
+    expect(result.status).toBe('PASS');
+    expect(result.errorCount).toBe(0);
+  });
+
+  it('imprintcv_verify_draft normalizes highlights format gracefully without crashing', async () => {
+    const server = createImprintCVMcpServer();
+    const registeredTools = (server as unknown as { _registeredTools: Record<string, { handler: (args: unknown) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> }> })._registeredTools;
+
+    const verifyTool = registeredTools['imprintcv_verify_draft'];
+
+    const legacyDraft = {
+      targetRole: 'Senior Software Engineer',
+      targetCompany: 'Stripe',
+      basics: sampleMaster.basics,
+      experience: [
+        {
+          id: 'exp_stripe',
+          company: 'Stripe',
+          title: 'Senior Software Engineer',
+          startDate: '2021-01',
+          endDate: null,
+          technologies: ['TypeScript', 'Node.js'],
+          highlights: [
+            {
+              id: 'bullet_stripe_01',
+              text: 'Architected payment webhook processor handling 25,000 req/sec with 99.99% uptime.',
+            },
+          ],
+        },
+      ],
+      skills: sampleMaster.skills,
+      education: sampleMaster.education,
+    };
+
+    const response = await verifyTool.handler({
+      tailoredResume: legacyDraft,
+      masterResume: sampleMaster,
+    });
+
+    expect(response.isError).toBeFalsy();
+    const result = JSON.parse(response.content[0].text);
+    expect(result.status).toBe('PASS');
+    expect(result.errorCount).toBe(0);
   });
 });

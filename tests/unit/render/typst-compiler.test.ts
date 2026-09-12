@@ -75,4 +75,18 @@ describe('Phase 5: Typst WASM Compiler & Templates', () => {
     const header = Buffer.from(pdfBytes.slice(0, 5)).toString('ascii');
     expect(header).toBe('%PDF-');
   });
+
+  it('compiles PDF in-memory using executive template', async () => {
+    const pdfBytes = await compileTypstToPdf(resume, { template: 'executive' });
+    expect(pdfBytes).toBeInstanceOf(Uint8Array);
+    const header = Buffer.from(pdfBytes.slice(0, 5)).toString('ascii');
+    expect(header).toBe('%PDF-');
+  });
+
+  it('compiles PDF in-memory using compact-tech template', async () => {
+    const pdfBytes = await compileTypstToPdf(resume, { template: 'compact-tech' });
+    expect(pdfBytes).toBeInstanceOf(Uint8Array);
+    const header = Buffer.from(pdfBytes.slice(0, 5)).toString('ascii');
+    expect(header).toBe('%PDF-');
+  });
 });

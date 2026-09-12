@@ -7,6 +7,7 @@ import { compileWithBudget } from '../render/page-budget.js';
 import type { TemplateName } from '../render/typst-compiler.js';
 import { generateJobSlug } from '../utils/slug.js';
 import { createSpinner } from '../utils/logger.js';
+import { registerApplication } from './registry.js';
 
 export interface WriteBundleOptions {
   outputBaseDir?: string;
@@ -24,10 +25,10 @@ export function generateSideBySideDiffMarkdown(resume: TailoredResume, verificat
   lines.push('## Experience & Bullet Transformations');
   lines.push('');
 
-  for (const exp of resume.experience) {
+  for (const exp of resume.experience || []) {
     lines.push(`### ${exp.title} — ${exp.company} (${exp.startDate} - ${exp.endDate || 'Present'})`);
     lines.push('');
-    for (const b of exp.bullets) {
+    for (const b of exp.bullets || []) {
       lines.push(`- **[${b.status}]** \`[${b.id}]\``);
       if (b.status !== 'UNCHANGED' && b.original !== b.tailored) {
         lines.push(`  - *Original*: ${b.original}`);
@@ -39,7 +40,7 @@ export function generateSideBySideDiffMarkdown(resume: TailoredResume, verificat
     lines.push('');
   }
 
-  if (resume.skills.length > 0) {
+  if (resume.skills && resume.skills.length > 0) {
     lines.push('## Skills');
     lines.push(resume.skills.map((s) => s.name).join(', '));
     lines.push('');
@@ -53,10 +54,10 @@ function synthesizePlanFromResume(resume: TailoredResume): TailoringPlan {
     targetRole: resume.targetRole,
     targetCompany: resume.targetCompany,
     strategySummary: `Tailored resume for ${resume.targetRole} at ${resume.targetCompany}`,
-    experiencePlan: resume.experience.map((exp) => ({
+    experiencePlan: (resume.experience || []).map((exp) => ({
       companyId: exp.id,
-      reorder: exp.bullets.map((b) => b.id),
-      rewrite: exp.bullets.filter((b) => b.status === 'REWORDED').map((b) => b.id),
+      reorder: (exp.bullets || []).map((b) => b.id),
+      rewrite: (exp.bullets || []).filter((b) => b.status === 'REWORDED' || (b.status as string) === 'REPHRASED').map((b) => b.id),
       compress: [],
       remove: [],
     })),
@@ -132,6 +133,26 @@ export async function writeApplicationBundle(
   // 7. verification.json
   const verifPath = path.join(bundleDir, 'verification.json');
   await fs.writeFile(verifPath, JSON.stringify(report, null, 2), 'utf-8');
+
+  // 8. Auto-register in applications/registry.json
+  try {
+    await registerApplication(
+      {
+        id: slug,
+        company: tailoredResume.targetCompany,
+        role: tailoredResume.targetRole,
+        createdAt: new Date().toISOString(),
+        status: report.status,
+        template,
+        targetPages,
+        bundleDir,
+        pdfPath,
+        jsonPath,
+        mdPath,
+      },
+      path.join(baseDir, 'registry.json')
+    );
+  } catch {}
 
   if (spinner) spinner.succeed(`Application bundle written to: ${bundleDir}`);
 

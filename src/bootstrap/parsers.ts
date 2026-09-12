@@ -35,6 +35,24 @@ export async function parseTXT(filePath: string): Promise<string> {
   return await fs.readFile(resolved, 'utf-8');
 }
 
+export async function isLinkedInSource(filePath: string): Promise<boolean> {
+  const resolved = filePath.startsWith('~') ? path.join(os.homedir(), filePath.slice(1)) : path.resolve(filePath);
+  try {
+    const stat = await fs.stat(resolved);
+    if (stat.isFile() && path.extname(resolved).toLowerCase() === '.zip') {
+      return true;
+    }
+    if (stat.isDirectory()) {
+      const files = await fs.readdir(resolved);
+      const lower = files.map((f) => f.toLowerCase());
+      return lower.includes('positions.csv') || lower.includes('profile.csv') || lower.includes('skills.csv');
+    }
+  } catch {
+    return false;
+  }
+  return false;
+}
+
 export async function parseResumeFile(filePath: string): Promise<string> {
   const resolved = filePath.startsWith('~') ? path.join(os.homedir(), filePath.slice(1)) : path.resolve(filePath);
   const ext = path.extname(resolved).toLowerCase();
@@ -47,6 +65,7 @@ export async function parseResumeFile(filePath: string): Promise<string> {
     case '.md':
       return await parseTXT(resolved);
     default:
-      throw new Error(`Unsupported file extension "${ext}". Supported: .pdf, .docx, .txt, .md`);
+      throw new Error(`Unsupported file extension "${ext}". Supported: .pdf, .docx, .txt, .md, .zip (LinkedIn Export)`);
   }
 }
+

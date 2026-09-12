@@ -191,4 +191,35 @@ describe('Phase 3: Verifier Orchestrator & Status Contract', () => {
     expect(mismatchWarning).toBeDefined();
     expect(mismatchWarning?.factsOriginal).toContain('belongs to "exp_stripe", not "exp_google"');
   });
+
+  it('tolerates experience with highlights instead of bullets without throwing TypeError', () => {
+    const tailoredWithHighlights = {
+      targetRole: 'Staff Backend Engineer',
+      targetCompany: 'Stripe',
+      basics: master.basics,
+      experience: [
+        {
+          id: 'exp_stripe',
+          company: 'Stripe',
+          title: 'Staff Engineer',
+          startDate: '2021-01',
+          endDate: null,
+          technologies: ['Go', 'Kafka'],
+          highlights: [
+            {
+              id: 'bullet_stripe_01',
+              text: 'Built payment engine processing 50,000 req/sec in Go and Kafka.',
+            },
+          ],
+        },
+      ],
+      skills: master.skills,
+      education: master.education,
+    };
+
+    // Should NOT throw TypeError: tExp.bullets is not iterable
+    const report = verify(master, tailoredWithHighlights as unknown as TailoredResume);
+    expect(report.status).toBe('PASS');
+    expect(report.errorCount).toBe(0);
+  });
 });

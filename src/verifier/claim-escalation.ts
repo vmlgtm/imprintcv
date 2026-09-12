@@ -50,8 +50,8 @@ export function checkClaimEscalation(
     }
   }
 
-  for (const tExp of tailoredResume.experience) {
-    for (const bullet of tExp.bullets) {
+  for (const tExp of tailoredResume.experience || []) {
+    for (const bullet of tExp.bullets || []) {
       const field = `experience[${tExp.id}].bullets[${bullet.id}]`;
       const tailoredLower = bullet.tailored.toLowerCase();
 

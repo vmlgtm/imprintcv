@@ -1,6 +1,6 @@
 import type { MasterResume } from '../types/resume.js';
 import type { StructuredFacts } from '../types/facts.js';
-import type { TailoredResume, VerificationReport, VerificationStatus, VerificationIssue } from '../types/bundle.js';
+import { normalizeTailoredResume, type TailoredResume, type VerificationReport, type VerificationStatus, type VerificationIssue } from '../types/bundle.js';
 import { runLayer1HardChecks } from './layer1-hard.js';
 import { checkProvenance } from './provenance.js';
 import { checkClaimEscalation } from './claim-escalation.js';
@@ -15,27 +15,28 @@ export function verify(
   coverLetter?: string,
   providedFacts?: StructuredFacts
 ): VerificationReport {
+  const normalizedTailored = normalizeTailoredResume(tailoredResume, masterResume);
   const masterFacts = providedFacts || extractFacts(masterResume);
   const issues: VerificationIssue[] = [];
 
   // 1. Layer 1: Hard Checks (Dates, Companies, Titles, Degrees, Metrics)
-  const layer1Issues = runLayer1HardChecks(masterResume, tailoredResume);
+  const layer1Issues = runLayer1HardChecks(masterResume, normalizedTailored);
   issues.push(...layer1Issues);
 
   // 2. Provenance Validation (ERROR: PROVENANCE_MISMATCH)
-  const provenanceIssues = checkProvenance(masterResume, tailoredResume);
+  const provenanceIssues = checkProvenance(masterResume, normalizedTailored);
   issues.push(...provenanceIssues);
 
   // 3. Claim Escalation (ERROR: CLAIM_STRENGTH_ESCALATION, CLAIM_SCOPE_ESCALATION, UNSUPPORTED_TECH_CLAIM)
-  const escalationIssues = checkClaimEscalation(masterResume, tailoredResume);
+  const escalationIssues = checkClaimEscalation(masterResume, normalizedTailored);
   issues.push(...escalationIssues);
 
   // 4. Layer 2: Taxonomy Checks (WARNING)
-  const { issues: layer2Issues, skillsMatched } = runLayer2TaxonomyChecks(masterResume, tailoredResume);
+  const { issues: layer2Issues, skillsMatched } = runLayer2TaxonomyChecks(masterResume, normalizedTailored);
   issues.push(...layer2Issues);
 
   // 5. Layer 3: Claim Modifiers (WARNING)
-  const layer3Issues = runLayer3ModifierChecks(masterResume, tailoredResume);
+  const layer3Issues = runLayer3ModifierChecks(masterResume, normalizedTailored);
   issues.push(...layer3Issues);
 
   // 6. Cover letter check

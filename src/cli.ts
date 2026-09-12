@@ -9,6 +9,8 @@ import { generatePlan } from './tailor/plan.js';
 import { tailorWithRepair } from './tailor/repair.js';
 import { extractFacts } from './bootstrap/facts-extractor.js';
 import { writeApplicationBundle } from './bundle/writer.js';
+import { listApplications, findApplication, openApplicationPdf } from './bundle/registry.js';
+import { analyzeJdCompatibility } from './tailor/jd-matcher.js';
 import { verify } from './verifier/index.js';
 import { runDiagnostics } from './doctor/doctor.js';
 import { performReverseSync } from './sync/reverse-sync.js';
@@ -38,8 +40,8 @@ program
 
 program
   .command('init')
-  .description('Bootstrap Master Profile / Career Vault from PDF, DOCX, or TXT')
-  .requiredOption('--from <path>', 'Source resume file (.pdf, .docx, .txt)')
+  .description('Bootstrap Master Profile / Career Vault from LinkedIn ZIP, PDF, DOCX, or TXT')
+  .requiredOption('--from <path>', 'Source file (.zip archive, folder, .pdf, .docx, .txt)')
   .option('--vault <path>', 'Custom path for career vault')
   .action(async (options, cmd) => {
     const globalOpts = cmd.optsWithGlobals();
@@ -69,13 +71,107 @@ program
   });
 
 program
+  .command('match')
+  .description('Evaluate JD compatibility and compute 3-tier skill gap analysis against Master Vault')
+  .requiredOption('--jd <source>', 'Job description file path, URL, or "-" for stdin')
+  .option('--vault <path>', 'Custom path to career vault directory')
+  .option('--json', 'Output machine-readable JSON to stdout', false)
+  .action(async (options) => {
+    if (options.json) setJsonMode(true);
+    try {
+      const vaultDir = options.vault ? path.resolve(options.vault) : getDefaultVaultDir();
+      const masterPath = path.join(vaultDir, 'master_resume.json');
+
+      let masterResume: MasterResume;
+      try {
+        const rawJson = await fs.readFile(masterPath, 'utf-8');
+        masterResume = MasterResumeSchema.parse(JSON.parse(rawJson));
+      } catch {
+        error(`Could not read Career Vault at ${masterPath}. Run "imprintcv init --from <resume>" first.`);
+        process.exit(2);
+      }
+
+      info(`Reading Target Job Description...`);
+      const jdText = await loadJD(options.jd);
+      const result = analyzeJdCompatibility(masterResume, jdText);
+
+      if (options.json) {
+        outputJson(result);
+      } else {
+        info(`\n📊 Job Compatibility Analysis:`);
+        success(`Score: ${result.score}% (${result.rating})`);
+        info(`Total JD Skills Found: ${result.totalJdSkillsCount}`);
+        info(`Covered by Vault: ${result.coveredCount} [${result.coveredSkills.join(', ')}]`);
+        if (result.trueSkillGaps.length > 0) {
+          warn(`Missing Skill Gaps (${result.trueSkillGaps.length}): ${result.trueSkillGaps.join(', ')}`);
+        }
+        if (result.recommendations.length > 0) {
+          info(`\nRecommendations:`);
+          for (const rec of result.recommendations) {
+            info(`• ${rec}`);
+          }
+        }
+      }
+    } catch (err) {
+      error(`Match analysis failed: ${(err as Error).message}`);
+      process.exit(2);
+    }
+  });
+
+program
+  .command('list')
+  .description('List tracked job applications and verification status')
+  .option('--dir <path>', 'Custom applications base directory')
+  .option('--json', 'Output machine-readable JSON to stdout', false)
+  .action(async (options) => {
+    if (options.json) setJsonMode(true);
+    try {
+      const apps = await listApplications(options.dir);
+      if (options.json) {
+        outputJson({ applications: apps });
+      } else {
+        if (apps.length === 0) {
+          info('No applications recorded yet. Run "imprintcv tailor --jd <file>" to create one.');
+          process.exit(0);
+        }
+        info(`📁 Tracked Applications (${apps.length}):\n`);
+        for (const a of apps) {
+          const statusIcon = a.status === 'PASS' ? '✅' : a.status === 'PASS_WITH_WARNINGS' ? '⚠️' : '❌';
+          info(`${statusIcon} [${a.id}]`);
+          info(`   Target: ${a.role} at ${a.company}`);
+          info(`   PDF:    ${a.pdfPath}`);
+          info(`   Date:   ${a.createdAt}`);
+          info('');
+        }
+      }
+    } catch (err) {
+      error(`List failed: ${(err as Error).message}`);
+      process.exit(2);
+    }
+  });
+
+program
+  .command('open <target>')
+  .description('Open compiled ATS application PDF in system viewer by job slug or path')
+  .option('--dir <path>', 'Custom applications base directory')
+  .action(async (target, options) => {
+    try {
+      const result = await openApplicationPdf(target, options.dir);
+      success(`Opening application PDF: ${result.openedPath}`);
+    } catch (err) {
+      error(`Open failed: ${(err as Error).message}`);
+      process.exit(2);
+    }
+  });
+
+program
   .command('tailor')
   .description('Tailor resume for a target job description (file, URL, or stdin)')
   .requiredOption('--jd <source>', 'Job description file path, URL, or "-" for stdin')
   .option('--vault <path>', 'Custom path to career vault directory')
   .option('--dry-run', 'Generate plan & validation report without writing PDF', false)
   .option('--json', 'Output machine-readable JSON to stdout and logs to stderr', false)
-  .option('--template <name>', 'Typst template (modern, classic, contemporary)', 'modern')
+  .option('--template <name>', 'Typst template (modern, classic, contemporary, executive, compact-tech)', 'modern')
   .option('--pages <n>', 'Target page budget (1 or 2)', '1')
   .option('--output <dir>', 'Output directory for application bundle')
   .action(async (options, cmd) => {

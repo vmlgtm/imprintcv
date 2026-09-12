@@ -195,7 +195,7 @@ function findMasterExperience(masterResume: MasterResume, tExp: { id: string; co
 export function checkDates(masterResume: MasterResume, tailoredResume: TailoredResume): VerificationIssue[] {
   const issues: VerificationIssue[] = [];
 
-  for (const tExp of tailoredResume.experience) {
+  for (const tExp of tailoredResume.experience || []) {
     const mExp = findMasterExperience(masterResume, tExp);
 
     if (mExp) {
@@ -218,7 +218,7 @@ export function checkDates(masterResume: MasterResume, tailoredResume: TailoredR
 export function checkCompanies(masterResume: MasterResume, tailoredResume: TailoredResume): VerificationIssue[] {
   const issues: VerificationIssue[] = [];
 
-  for (const tExp of tailoredResume.experience) {
+  for (const tExp of tailoredResume.experience || []) {
     const mExp = findMasterExperience(masterResume, tExp);
     if (mExp) {
       const origComp = mExp.company.toLowerCase().trim();
@@ -256,7 +256,7 @@ export function checkCompanies(masterResume: MasterResume, tailoredResume: Tailo
 export function checkTitles(masterResume: MasterResume, tailoredResume: TailoredResume): VerificationIssue[] {
   const issues: VerificationIssue[] = [];
 
-  for (const tExp of tailoredResume.experience) {
+  for (const tExp of tailoredResume.experience || []) {
     const mExp = findMasterExperience(masterResume, tExp);
     if (mExp) {
       const origTitle = mExp.title.toLowerCase().trim();
@@ -280,7 +280,7 @@ export function checkTitles(masterResume: MasterResume, tailoredResume: Tailored
 export function checkDegrees(masterResume: MasterResume, tailoredResume: TailoredResume): VerificationIssue[] {
   const issues: VerificationIssue[] = [];
 
-  for (const tEdu of tailoredResume.education) {
+  for (const tEdu of tailoredResume.education || []) {
     const mEdu = masterResume.education.find((e) => e.id === tEdu.id);
     if (mEdu) {
       const origDeg = `${mEdu.degree} from ${mEdu.institution}`.toLowerCase().trim();
@@ -340,8 +340,8 @@ export function runLayer1HardChecks(
     }
   }
 
-  for (const tExp of tailoredResume.experience) {
-    for (const bullet of tExp.bullets) {
+  for (const tExp of tailoredResume.experience || []) {
+    for (const bullet of tExp.bullets || []) {
       const sourceTexts: string[] = [];
       for (const sId of bullet.sourceBulletIds || []) {
         const text = allMasterBullets.get(sId);

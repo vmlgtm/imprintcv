@@ -42,8 +42,8 @@ export function runLayer3ModifierChecks(
     }
   }
 
-  for (const tExp of tailoredResume.experience) {
-    for (const bullet of tExp.bullets) {
+  for (const tExp of tailoredResume.experience || []) {
+    for (const bullet of tExp.bullets || []) {
       const sourceTexts: string[] = [];
       for (const sId of bullet.sourceBulletIds || []) {
         const text = allMasterBullets.get(sId);

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { inferEndDates, matchTechKeyword } from '../../../src/bootstrap/init.js';
+import { inferEndDates } from '../../../src/bootstrap/init.js';
+import { matchTechKeyword } from '../../../src/bootstrap/linkedin-parser.js';
 
 describe('Bootstrap init helpers & normalization', () => {
   it('infers missing end dates in reverse chronological order', () => {

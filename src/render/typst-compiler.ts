@@ -4,13 +4,14 @@ import { fileURLToPath } from 'node:url';
 import { $typst } from '@myriaddreamin/typst.ts';
 import type { TailoredResume } from '../types/bundle.js';
 
-export type TemplateName = 'modern' | 'classic' | 'contemporary';
+export type TemplateName = 'modern' | 'classic' | 'contemporary' | 'executive' | 'compact-tech';
 
 export interface RenderOptions {
   template?: TemplateName;
   marginInches?: number;
   fontSizePt?: number;
   spacingEm?: number;
+  leadingEm?: number;
 }
 
 export function escapeTypst(str: string): string {
@@ -37,20 +38,32 @@ export function generateTypstDocument(
   const margin = options.marginInches ?? 0.5;
   const fontSize = options.fontSizePt ?? 10;
   const spacing = options.spacingEm ?? 0.65;
+  const leading = options.leadingEm ?? 0.55;
 
   const fontList =
-    templateName === 'classic'
+    templateName === 'classic' || templateName === 'executive'
       ? '("Linux Libertine", "Times New Roman", "DejaVu Serif", "Serif")'
       : '("Inter", "Helvetica", "Arial", "DejaVu Sans", "Sans-Serif")';
 
   const primaryColor =
     templateName === 'contemporary'
       ? 'rgb("#1e293b")'
+      : templateName === 'executive'
+      ? 'rgb("#0f172a")'
+      : templateName === 'compact-tech'
+      ? 'rgb("#090d16")'
       : templateName === 'classic'
       ? 'rgb("#000000")'
       : 'rgb("#111827")';
 
-  const accentColor = templateName === 'contemporary' ? 'rgb("#3b82f6")' : 'rgb("#d1d5db")';
+  const accentColor =
+    templateName === 'contemporary'
+      ? 'rgb("#3b82f6")'
+      : templateName === 'compact-tech'
+      ? 'rgb("#2563eb")'
+      : templateName === 'executive'
+      ? 'rgb("#475569")'
+      : 'rgb("#d1d5db")';
 
   const contacts: string[] = [];
   if (resume.basics.location) contacts.push(escapeTypst(resume.basics.location));
@@ -75,7 +88,7 @@ export function generateTypstDocument(
   fill: ${primaryColor},
   lang: "en",
 )
-#set par(justify: false, leading: 0.55em)
+#set par(justify: false, leading: ${leading}em)
 
 `;
 
@@ -94,6 +107,24 @@ export function generateTypstDocument(
   ]
 )
 #v(${spacing}em)
+`;
+  } else if (templateName === 'executive') {
+    doc += `
+#align(center)[
+  #text(size: 1.9em, weight: "bold", fill: ${primaryColor})[${escapeTypst(resume.basics.name)}] \\
+  #v(2pt)
+  #text(size: 0.88em, fill: rgb("#334155"))[${contactLine}]
+]
+#v(${spacing}em)
+`;
+  } else if (templateName === 'compact-tech') {
+    doc += `
+#grid(
+  columns: (1fr, auto),
+  text(size: 1.6em, weight: "bold", fill: ${primaryColor})[${escapeTypst(resume.basics.name)}],
+  align(right)[#text(size: 0.8em, fill: rgb("#374151"))[${contactLine}]]
+)
+#v(${spacing * 0.75}em)
 `;
   } else if (templateName === 'classic') {
     doc += `
@@ -153,7 +184,7 @@ export function generateTypstDocument(
 )
 #v(2pt)
 `;
-      for (const b of exp.bullets) {
+      for (const b of exp.bullets || []) {
         doc += `#list(marker: [•], text(size: 0.95em)[${escapeTypst(b.tailored)}])\n`;
       }
       doc += `#v(2pt)\n`;

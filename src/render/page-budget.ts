@@ -22,6 +22,30 @@ export interface BudgetResult {
   adjustmentsApplied: string[];
 }
 
+interface TuningCandidate {
+  fontSizePt: number;
+  marginInches: number;
+  spacingEm: number;
+  leadingEm: number;
+  description: string;
+}
+
+// Ordered ladder of fine-grained continuous parameter configurations
+const TUNING_LADDER: TuningCandidate[] = [
+  // Stage 1: Minor vertical margin & pitch compaction (Font: 10.0pt)
+  { fontSizePt: 10.0, marginInches: 0.48, spacingEm: 0.58, leadingEm: 0.53, description: 'tighten_spacing_0.58em' },
+  { fontSizePt: 10.0, marginInches: 0.45, spacingEm: 0.50, leadingEm: 0.50, description: 'tighten_margins_0.45in_spacing_0.50em' },
+
+  // Stage 2: Sub-point font scaling (9.8pt - 9.6pt)
+  { fontSizePt: 9.8, marginInches: 0.45, spacingEm: 0.48, leadingEm: 0.50, description: 'scale_font_9.8pt_spacing_0.48em' },
+  { fontSizePt: 9.7, marginInches: 0.44, spacingEm: 0.45, leadingEm: 0.48, description: 'scale_font_9.7pt_spacing_0.45em' },
+  { fontSizePt: 9.6, marginInches: 0.42, spacingEm: 0.42, leadingEm: 0.48, description: 'scale_font_9.6pt_margins_0.42in' },
+
+  // Stage 3: Maximum density layout (9.5pt - 9.4pt)
+  { fontSizePt: 9.5, marginInches: 0.40, spacingEm: 0.38, leadingEm: 0.46, description: 'scale_font_9.5pt_margins_0.40in_spacing_0.38em' },
+  { fontSizePt: 9.4, marginInches: 0.38, spacingEm: 0.35, leadingEm: 0.44, description: 'scale_font_9.4pt_margins_0.38in_spacing_0.35em' },
+];
+
 export async function compileWithBudget(
   resume: TailoredResume,
   templateName: TemplateName = 'modern',
@@ -30,12 +54,13 @@ export async function compileWithBudget(
   const adjustmentsApplied: string[] = [];
   const resumeClone: TailoredResume = JSON.parse(JSON.stringify(resume));
 
-  // Step 1: Default compile
+  // Step 1: Baseline compile (Standard 10pt / 0.50in margin / 0.65em spacing)
   let options: RenderOptions = {
     template: templateName,
     marginInches: 0.5,
     fontSizePt: 10,
     spacingEm: 0.65,
+    leadingEm: 0.55,
   };
   let pdfBytes = await compileTypstToPdf(resumeClone, options);
   let pageCount = await getPdfPageCount(pdfBytes);
@@ -44,46 +69,34 @@ export async function compileWithBudget(
     return { pdfBytes, pageCount, adjustmentsApplied };
   }
 
-  // Step 2: Tighten vertical spacing
-  info(`Resume is ${pageCount} pages (target: ${targetPages}). Step 2: Tightening vertical spacing...`);
-  options.spacingEm = 0.45;
-  adjustmentsApplied.push('tightened_vertical_spacing');
-  pdfBytes = await compileTypstToPdf(resumeClone, options);
-  pageCount = await getPdfPageCount(pdfBytes);
+  info(`Resume is ${pageCount} pages (target: ${targetPages}). Activating Typst Micro-Budgeting Solver...`);
 
-  if (pageCount <= targetPages) {
-    return { pdfBytes, pageCount, adjustmentsApplied };
+  // Step 2: Continuous parameter tuning ladder (Preserves 100% of candidate content)
+  for (const candidate of TUNING_LADDER) {
+    options = {
+      template: templateName,
+      fontSizePt: candidate.fontSizePt,
+      marginInches: candidate.marginInches,
+      spacingEm: candidate.spacingEm,
+      leadingEm: candidate.leadingEm,
+    };
+
+    pdfBytes = await compileTypstToPdf(resumeClone, options);
+    pageCount = await getPdfPageCount(pdfBytes);
+
+    if (pageCount <= targetPages) {
+      adjustmentsApplied.push(candidate.description);
+      info(`Micro-budget solver converged to ${pageCount} page(s) using [${candidate.description}] without dropping content.`);
+      return { pdfBytes, pageCount, adjustmentsApplied };
+    }
   }
 
-  // Step 3: Adjust page margins (0.50in -> 0.42in)
-  info(`Resume is ${pageCount} pages. Step 3: Adjusting page margins to 0.42in...`);
-  options.marginInches = 0.42;
-  adjustmentsApplied.push('reduced_margins_to_0.42in');
-  pdfBytes = await compileTypstToPdf(resumeClone, options);
-  pageCount = await getPdfPageCount(pdfBytes);
-
-  if (pageCount <= targetPages) {
-    return { pdfBytes, pageCount, adjustmentsApplied };
-  }
-
-  // Step 4: Scale typography (10pt -> 9.5pt)
-  info(`Resume is ${pageCount} pages. Step 4: Scaling typography to 9.5pt...`);
-  options.fontSizePt = 9.5;
-  options.spacingEm = 0.35;
-  adjustmentsApplied.push('scaled_typography_to_9.5pt');
-  pdfBytes = await compileTypstToPdf(resumeClone, options);
-  pageCount = await getPdfPageCount(pdfBytes);
-
-  if (pageCount <= targetPages) {
-    return { pdfBytes, pageCount, adjustmentsApplied };
-  }
-
-  // Step 5: Trim overly long bullets (compress)
-  info(`Resume is ${pageCount} pages. Step 5: Compressing long bullets...`);
-  for (const exp of resumeClone.experience) {
-    for (const b of exp.bullets) {
-      if (b.tailored.length > 120) {
-        b.tailored = b.tailored.slice(0, 110) + '...';
+  // Step 3: Text compression (compress long bullets >130 chars)
+  info(`Resume still exceeds ${targetPages} page(s). Compressing lengthy bullets...`);
+  for (const exp of resumeClone.experience || []) {
+    for (const b of exp.bullets || []) {
+      if (b.tailored.length > 130) {
+        b.tailored = b.tailored.slice(0, 115) + '...';
       }
     }
   }
@@ -95,11 +108,11 @@ export async function compileWithBudget(
     return { pdfBytes, pageCount, adjustmentsApplied };
   }
 
-  // Step 6: Drop lowest-ranked bullet (Last resort)
-  info(`Resume is ${pageCount} pages. Step 6: Dropping lowest-ranked bullet point as last resort...`);
-  for (let i = resumeClone.experience.length - 1; i >= 0; i--) {
+  // Step 4: Drop lowest-ranked bullet (Absolute Last Resort)
+  info(`Resume is ${pageCount} pages. Dropping lowest-ranked bullet point as last resort...`);
+  for (let i = (resumeClone.experience || []).length - 1; i >= 0; i--) {
     const exp = resumeClone.experience[i];
-    if (exp && exp.bullets.length > 1) {
+    if (exp && exp.bullets && exp.bullets.length > 1) {
       const dropped = exp.bullets.pop();
       adjustmentsApplied.push(`dropped_bullet_${dropped?.id || 'last'}`);
       pdfBytes = await compileTypstToPdf(resumeClone, options);

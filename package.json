@@ -1,6 +1,6 @@
 {
   "name": "imprintcv",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "AI resume verification engine & ATS document compiler",
   "author": "Vaibhav Misra",
   "license": "MIT",
@@ -60,17 +60,21 @@
     "@myriaddreamin/typst-ts-web-compiler": "^0.7.0",
     "@myriaddreamin/typst.ts": "^0.7.0",
     "@openrouter/ai-sdk-provider": "^0.3.0",
+    "adm-zip": "^0.6.0",
     "ai": "^4.1.47",
     "chalk": "^5.4.1",
     "commander": "^13.1.0",
     "fast-redact": "^3.5.0",
     "js-yaml": "^4.1.0",
     "mammoth": "^1.9.0",
+    "open": "^11.0.1",
     "ora": "^8.2.0",
     "pdf-parse": "^1.1.1",
-    "zod": "^3.24.2"
+    "zod": "^3.24.2",
+    "zod-to-json-schema": "^3.24.1"
   },
   "devDependencies": {
+    "@types/adm-zip": "^0.5.8",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.13.9",
     "@types/pdf-parse": "^1.1.4",

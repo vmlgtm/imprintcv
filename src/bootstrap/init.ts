@@ -4,7 +4,8 @@ import os from 'node:os';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { MasterResumeSchema, type MasterResume } from '../types/resume.js';
-import { parseResumeFile } from './parsers.js';
+import { parseResumeFile, isLinkedInSource } from './parsers.js';
+import { loadLinkedInFiles, parseLinkedInToMasterResume, matchTechKeyword } from './linkedin-parser.js';
 import { sanitizeText, restoreText } from '../privacy/sanitizer.js';
 import { computeVaultHash } from '../utils/hash.js';
 import { generateMasterMarkdown } from './markdown-generator.js';
@@ -89,15 +90,6 @@ function normalizeDate(d?: string | null): string {
   const yearMatch = d.match(/\b(19\d{2}|20\d{2})\b/);
   if (yearMatch) return yearMatch[1];
   return d;
-}
-
-export function matchTechKeyword(text: string, tech: string): boolean {
-  if (!tech || !text) return false;
-  const escaped = tech.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const startBound = /^\w/.test(tech) ? '\\b' : '';
-  const endBound = /\w$/.test(tech) ? '\\b' : '';
-  const regex = new RegExp(`${startBound}${escaped}${endBound}`, 'i');
-  return regex.test(text);
 }
 
 export function inferEndDates<T extends { startDate?: string | null; endDate?: string | null }>(
@@ -272,14 +264,21 @@ export async function bootstrapCareerVault(options: InitOptions): Promise<{
   mdPath: string;
   masterResume: MasterResume;
 }> {
-  const spinner = createSpinner('Reading and parsing resume document...');
-  const rawText = await parseResumeFile(options.fromPath);
-  
-  if (spinner) spinner.text = 'Sanitizing PII before processing...';
-  const { sanitized, replacements } = sanitizeText(rawText);
+  const isLinkedIn = await isLinkedInSource(options.fromPath);
+  let masterResume: MasterResume;
+  const spinner = createSpinner(isLinkedIn ? 'Parsing official LinkedIn archive export...' : 'Reading and parsing resume document...');
 
-  if (spinner) spinner.text = 'Extracting structured career facts with AI...';
-  let extractedResume: Partial<ExtractedData>;
+  if (isLinkedIn) {
+    const files = await loadLinkedInFiles(options.fromPath);
+    masterResume = parseLinkedInToMasterResume(files);
+  } else {
+    const rawText = await parseResumeFile(options.fromPath);
+    
+    if (spinner) spinner.text = 'Sanitizing PII before processing...';
+    const { sanitized, replacements } = sanitizeText(rawText);
+
+    if (spinner) spinner.text = 'Extracting structured career facts with AI...';
+    let extractedResume: Partial<ExtractedData>;
 
   try {
     const model = getLanguageModel({ provider: options.provider });
@@ -327,18 +326,19 @@ ${sanitized}`,
     }
   }
 
-  // Restore PII across experience and highlights
-  for (const exp of extractedResume.experience || []) {
-    for (let i = 0; i < (exp.bullets || []).length; i++) {
-      exp.bullets[i] = restoreText(exp.bullets[i], replacements);
+    // Restore PII across experience and highlights
+    for (const exp of extractedResume.experience || []) {
+      for (let i = 0; i < (exp.bullets || []).length; i++) {
+        exp.bullets[i] = restoreText(exp.bullets[i], replacements);
+      }
     }
-  }
 
-  if (extractedResume.experience && extractedResume.experience.length > 0) {
-    extractedResume.experience = inferEndDates(extractedResume.experience);
-  }
+    if (extractedResume.experience && extractedResume.experience.length > 0) {
+      extractedResume.experience = inferEndDates(extractedResume.experience);
+    }
 
-  const masterResume = assignStableIds(extractedResume);
+    masterResume = assignStableIds(extractedResume);
+  }
 
   const validation = MasterResumeSchema.safeParse(masterResume);
   if (!validation.success) {

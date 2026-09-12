@@ -64,6 +64,15 @@ export async function loadJD(source: string): Promise<string> {
     return extractTextFromHtml(html);
   }
 
-  // 3. Local File Path
-  return await fs.readFile(trimmed, 'utf-8');
+  // 3. Raw text or Local File Path
+  try {
+    // If it's a short string without newlines that could be a file path, try reading file
+    if (!trimmed.includes('\n') && (trimmed.length < 500)) {
+      return await fs.readFile(trimmed, 'utf-8');
+    }
+  } catch {
+    // If file does not exist, treat source as raw text
+  }
+
+  return trimmed;
 }

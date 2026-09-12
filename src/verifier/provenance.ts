@@ -34,8 +34,8 @@ export function checkProvenance(
     }
   }
 
-  for (const tExp of tailoredResume.experience) {
-    for (const bullet of tExp.bullets) {
+  for (const tExp of tailoredResume.experience || []) {
+    for (const bullet of tExp.bullets || []) {
       const field = `experience[${tExp.id}].bullets[${bullet.id}]`;
 
       // 1. Must cite at least one sourceBulletId
