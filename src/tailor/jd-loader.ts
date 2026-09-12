@@ -1,5 +1,8 @@
 import fs from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
 import { APP_VERSION } from '../utils/version.js';
+import { parseResumeFile } from '../bootstrap/parsers.js';
 
 export function extractTextFromHtml(html: string): string {
   // Strip script and style tags
@@ -42,8 +45,40 @@ export async function readStdin(): Promise<string> {
   });
 }
 
+export function resolveFilePath(filePath: string): string {
+  if (filePath === '~') {
+    return os.homedir();
+  }
+  if (filePath.startsWith('~/') || filePath.startsWith('~\\')) {
+    return path.join(os.homedir(), filePath.slice(2));
+  }
+  if (/^~[a-zA-Z0-9_.-]+[/\\]/.test(filePath)) {
+    return path.join(os.homedir(), filePath.slice(1));
+  }
+  return path.resolve(filePath);
+}
+
+async function readJdFile(resolvedPath: string, originalPath: string): Promise<string> {
+  const ext = path.extname(resolvedPath).toLowerCase();
+  try {
+    if (ext === '.html' || ext === '.htm') {
+      const html = await fs.readFile(resolvedPath, 'utf-8');
+      return extractTextFromHtml(html);
+    }
+    if (['.pdf', '.docx', '.txt', '.md'].includes(ext)) {
+      return await parseResumeFile(resolvedPath);
+    }
+    return await fs.readFile(resolvedPath, 'utf-8');
+  } catch (err) {
+    throw new Error(`Failed to parse job description file "${originalPath}": ${(err as Error).message}`);
+  }
+}
+
 export async function loadJD(source: string): Promise<string> {
-  const trimmed = source.trim();
+  const trimmed = (source || '').trim();
+  if (!trimmed) {
+    return '';
+  }
 
   // 1. Stdin
   if (trimmed === '-') {
@@ -64,14 +99,62 @@ export async function loadJD(source: string): Promise<string> {
     return extractTextFromHtml(html);
   }
 
-  // 3. Raw text or Local File Path
-  try {
-    // If it's a short string without newlines that could be a file path, try reading file
-    if (!trimmed.includes('\n') && (trimmed.length < 500)) {
-      return await fs.readFile(trimmed, 'utf-8');
+  // 3. File Path or Raw Text
+  const looksLikeFilePath =
+    !trimmed.includes('\n') &&
+    !trimmed.includes('\r') &&
+    (trimmed === '.' ||
+      trimmed === '..' ||
+      trimmed === '~' ||
+      trimmed.startsWith('/') ||
+      trimmed.startsWith('~/') ||
+      trimmed.startsWith('~\\') ||
+      /^~[a-zA-Z0-9_.-]+[/\\]/.test(trimmed) ||
+      trimmed.startsWith('./') ||
+      trimmed.startsWith('.\\') ||
+      trimmed.startsWith('../') ||
+      trimmed.startsWith('..\\') ||
+      trimmed.endsWith('/') ||
+      trimmed.endsWith('\\') ||
+      /^[a-zA-Z]:[\\/]/.test(trimmed) ||
+      /\.(pdf|docx|txt|md|html?)$/i.test(trimmed));
+
+  if (looksLikeFilePath) {
+    const resolvedPath = resolveFilePath(trimmed);
+    let stat;
+    try {
+      stat = await fs.stat(resolvedPath);
+    } catch {
+      throw new Error(`Job description file not found: ${trimmed} (resolved to ${resolvedPath})`);
     }
-  } catch {
-    // If file does not exist, treat source as raw text
+
+    if (!stat.isFile()) {
+      throw new Error(`Job description file not found: ${trimmed} (resolved to ${resolvedPath} which is not a file)`);
+    }
+
+    return await readJdFile(resolvedPath, trimmed);
+  }
+
+  // Fallback: If it's a single line without newlines under 500 chars, it could still be an existing file
+  if (!trimmed.includes('\n') && !trimmed.includes('\r') && trimmed.length < 500) {
+    try {
+      const resolvedPath = resolveFilePath(trimmed);
+      const stat = await fs.stat(resolvedPath);
+      if (stat.isDirectory()) {
+        throw new Error(`Job description file not found: ${trimmed} (resolved to ${resolvedPath} which is not a file)`);
+      }
+      if (stat.isFile()) {
+        return await readJdFile(resolvedPath, trimmed);
+      }
+    } catch (err) {
+      if (
+        (err as Error).message.includes('Job description file not found') ||
+        (err as Error).message.includes('Failed to parse job description file')
+      ) {
+        throw err;
+      }
+      // Not an existing file on disk, treat as raw text
+    }
   }
 
   return trimmed;

@@ -235,6 +235,56 @@ describe('Phase 7: MCP Server & Tools', () => {
     expect(result.trueSkillGaps).toContain('swift');
   });
 
+  it('imprintcv_analyze_jd loads and analyzes binary PDF and DOCX job descriptions', async () => {
+    const server = createImprintCVMcpServer();
+    const registeredTools = (server as unknown as { _registeredTools: Record<string, { handler: (args: unknown) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> }> })._registeredTools;
+
+    const analyzeTool = registeredTools['imprintcv_analyze_jd'];
+    expect(analyzeTool).toBeDefined();
+
+    await fs.writeFile(path.join(tempDir, 'master_resume.json'), JSON.stringify(sampleMaster, null, 2), 'utf-8');
+
+    // Test with binary PDF
+    const pdfPath = path.resolve(__dirname, '../../fixtures/sample_jd.pdf');
+    const pdfResponse = await analyzeTool.handler({
+      jd: pdfPath,
+      vaultPath: tempDir,
+    });
+    expect(pdfResponse.isError).toBeFalsy();
+    const pdfResult = JSON.parse(pdfResponse.content[0].text);
+    expect(pdfResult.totalJdSkillsCount).toBeGreaterThan(0);
+    expect(pdfResult.trueSkillGaps).toContain('apache kafka');
+
+    // Test with binary DOCX
+    const docxPath = path.resolve(__dirname, '../../fixtures/sample_jd.docx');
+    const docxResponse = await analyzeTool.handler({
+      jd: docxPath,
+      vaultPath: tempDir,
+    });
+    expect(docxResponse.isError).toBeFalsy();
+    const docxResult = JSON.parse(docxResponse.content[0].text);
+    expect(docxResult.totalJdSkillsCount).toBeGreaterThan(0);
+    expect(docxResult.trueSkillGaps).toContain('amazon web services');
+  });
+
+  it('imprintcv_analyze_jd returns structured error when JD file fails to load', async () => {
+    const server = createImprintCVMcpServer();
+    const registeredTools = (server as unknown as { _registeredTools: Record<string, { handler: (args: unknown) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> }> })._registeredTools;
+
+    const analyzeTool = registeredTools['imprintcv_analyze_jd'];
+    expect(analyzeTool).toBeDefined();
+
+    await fs.writeFile(path.join(tempDir, 'master_resume.json'), JSON.stringify(sampleMaster, null, 2), 'utf-8');
+
+    const response = await analyzeTool.handler({
+      jd: '~/Downloads/nonexistent_file_404.pdf',
+      vaultPath: tempDir,
+    });
+
+    expect(response.isError).toBe(true);
+    expect(response.content[0].text).toContain('Failed to load Job Description: Job description file not found: ~/Downloads/nonexistent_file_404.pdf');
+  });
+
   it('imprintcv_list_applications lists registered applications from directory', async () => {
     const server = createImprintCVMcpServer();
     const registeredTools = (server as unknown as { _registeredTools: Record<string, { handler: (args: unknown) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> }> })._registeredTools;

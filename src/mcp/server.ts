@@ -475,7 +475,15 @@ export function createImprintCVMcpServer(): McpServer {
         const rawJson = await fs.readFile(jsonPath, 'utf-8');
         const masterResume = MasterResumeSchema.parse(JSON.parse(rawJson));
 
-        const jdText = await loadJD(jd);
+        let jdText: string;
+        try {
+          jdText = await loadJD(jd);
+        } catch (err) {
+          return {
+            isError: true,
+            content: [{ type: 'text', text: `Failed to load Job Description: ${(err as Error).message}` }],
+          };
+        }
         let tailoredResume: TailoredResume | undefined;
         if (tailoredResumeArg !== undefined || tailoredResumeJson !== undefined) {
           const parsed = parseAndValidateTailoredResume(tailoredResumeArg, tailoredResumeJson, masterResume);
