@@ -1,0 +1,14 @@
+# Trivy ignore file
+# https://trivy.dev/latest/docs/references/scanner/vulnerability/#vulnerability-ignore-file
+#
+# Format: one CVE ID per line. Comments start with #.
+#
+# --- Accepted Risks ---
+#
+# CVE-2019-1000044 (argparse 1.0.10, ReDoS)
+#   - Transitive dependency of mammoth@1.12.1 (argparse ~1.0.3)
+#   - argparse is only used in mammoth's CLI entry point, NOT in the
+#     programmatic API (mammoth.extractRawText) that this project uses.
+#   - Risk is not exploitable in this codebase's usage pattern.
+#   - No fixed version exists in the 1.x line that mammoth requires.
+CVE-2019-1000044
